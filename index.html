@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIGsniper | Portfolio</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --russian-violet: #3a015cff;
+            --palatinate: #4f0147ff;
+            --dark-purple: #35012cff;
+            --dark-purple-2: #290025ff;
+            --dark-purple-3: #11001cff;
+            --accent: #ff5f9a;
+            --light-text: #e1d0ea;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, var(--dark-purple-3), var(--dark-purple-2));
+            color: var(--light-text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header & Navigation */
+        header {
+            background-color: rgba(41, 0, 37, 0.9);
+            padding: 20px 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--light-text);
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+        
+        .logo span {
+            color: var(--accent);
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+        
+        .nav-links li {
+            margin-left: 30px;
+        }
+        
+        .nav-links a {
+            color: var(--light-text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--accent);
+            transition: width 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding: 180px 0 100px;
+            text-align: center;
+            background: linear-gradient(to bottom, var(--dark-purple-2), var(--dark-purple-3));
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, var(--russian-violet) 0%, transparent 50%);
+            opacity: 0.3;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, var(--light-text), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .hero p {
+            font-size: 1.5rem;
+            max-width: 700px;
+            margin: 0 auto 40px;
+            color: var(--light-text);
+            opacity: 0.9;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 14px 35px;
+            background: linear-gradient(45deg, var(--russian-violet), var(--accent));
+            color: var(--light-text);
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(160, 0, 100, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(160, 0, 100, 0.6);
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        /* Projects Section */
+        .projects {
+            padding: 100px 0;
+            background-color: var(--dark-purple-3);
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+            color: var(--light-text);
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, var(--russian-violet), var(--accent));
+            border-radius: 2px;
+        }
+        
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+        
+        .project-card {
+            background: linear-gradient(to bottom, var(--dark-purple-2), var(--dark-purple));
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .project-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .project-img {
+            height: 200px;
+            background: linear-gradient(45deg, var(--palatinate), var(--russian-violet));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--light-text);
+            font-size: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .project-img::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 50%);
+            opacity: 0.2;
+        }
+        
+        .project-content {
+            padding: 25px;
+        }
+        
+        .project-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--light-text);
+        }
+        
+        .project-content p {
+            color: rgba(240, 230, 245, 0.8);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+        
+        .project-tags span {
+            background: rgba(90, 0, 80, 0.4);
+            color: var(--light-text);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .project-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: transparent;
+            color: var(--accent);
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: 2px solid var(--accent);
+        }
+        
+        .project-btn:hover {
+            background: var(--accent);
+            color: var(--light-text);
+            box-shadow: 0 0 15px rgba(255, 56, 100, 0.5);
+        }
+        
+        /* About Section */
+        .about {
+            padding: 100px 0;
+            background: linear-gradient(to bottom, var(--dark-purple), var(--dark-purple-2));
+        }
+        
+        .about-content {
+            display: flex;
+            align-items: center;
+            gap: 50px;
+        }
+        
+        .about-text {
+            flex: 1;
+        }
+        
+        .about-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: var(--light-text);
+        }
+        
+        .about-text p {
+            margin-bottom: 20px;
+            color: rgba(240, 230, 245, 0.9);
+            line-height: 1.8;
+        }
+        
+        .skills {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .skill {
+            background: rgba(90, 0, 80, 0.4);
+            padding: 12px 22px;
+            border-radius: 30px;
+            color: var(--light-text);
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .skill:hover {
+            transform: translateY(-3px);
+            background: rgba(120, 0, 100, 0.5);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--dark-purple-3);
+            padding: 60px 0 30px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .social-links a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, var(--russian-violet), var(--palatinate));
+            color: var(--light-text);
+            border-radius: 50%;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .social-links a:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, var(--accent), var(--russian-violet));
+        }
+        
+        .copyright {
+            color: rgba(240, 230, 245, 0.7);
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .about-content {
+                flex-direction: column;
+            }
+            
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero p {
+                font-size: 1.2rem;
+            }
+            
+            .project-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header & Navigation -->
+    <header>
+        <div class="container">
+            <nav>
+                <a href="#" class="logo"><span>AIG</span>sniper <span>Dev Portfolio</span></a>
+                <ul class="nav-links">
+                    <li><a href="#projects">Projects</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-content">
+            <h1>Crafting Digital Experiences</h1>
+            <p>Game developer, creative coder, and hobbyist building immersive worlds and innovative tools</p>
+            <a href="#projects" class="btn">Explore My Projects</a>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section class="projects" id="projects">
+        <div class="container">
+            <h2 class="section-title">Featured Projects</h2>
+            <div class="project-grid">
+                <!-- Project 1: Elderwood -->
+                <div class="project-card">
+                    <div class="project-img">
+                        <i class="fas fa-tree"></i>
+                    </div>
+                    <div class="project-content">
+                        <h3>Elderwood</h3>
+                        <p>An ambitious open-world indie game with combat, exploration, and a custom framework built with ES6 modules.</p>
+                        <div class="project-tags">
+                            <span>JavaScript</span>
+                            <span>PIXI JS</span>
+                            <span>WebGL</span>
+                            <span>Game Dev</span>
+                            <span>Open World</span>
+                        </div>
+                        <a href="https://aigsniperyt.github.io/elderwood-v4/" class="project-btn">View Project</a>
+                    </div>
+                </div>
+                
+                <!-- Project 2: Chess AI -->
+                <div class="project-card">
+                    <div class="project-img">
+                        <i class="fas fa-chess-knight"></i>
+                    </div>
+                    <div class="project-content">
+                        <h3>Chess AI</h3>
+                        <p>A genetic algorithm-based chess bot that uses natural selection to evolve its evaluation weights genome (array).</p>
+                        <div class="project-tags">
+                            <span>Evolution</span>
+                            <span>AI</span>
+                            <span>Genetic Algorithms</span>
+                            <span>Chess</span>
+                            <span>JS Classes</span>
+                            <span>Web Workers</span>
+                        </div>
+                        <a href="#" class="project-btn">View Project</a>
+                    </div>
+                </div>
+                
+                <!-- Project 3: Flight Sim -->
+                <div class="project-card">
+                    <div class="project-img">
+                        <i class="fas fa-plane"></i>
+                    </div>
+                    <div class="project-content">
+                        <h3>Flight Sim</h3>
+                        <p>A military jet flight simulator focused on fast, fun gameplay without the constraints of reality.</p>
+                        <div class="project-tags">
+                            <span>JS</span>
+                            <span>WebGL</span>
+                            <span>3D</span>
+                            <span>Physics</span>
+                            <span>Three.js</span>
+                            <span>Aerodynamics</span>
+
+                        </div>
+                        <a href="#" class="project-btn">View Project</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="container">
+            <h2 class="section-title">About Me</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>Creative Developer & Hobbyist</h2>
+                    <p>I'm a passionate indie developer who loves building games, tools, and experiments. For me, coding is a creative outlet where I can bring ideas to life without the constraints of commercial development.</p>
+                    <p>My approach is to first build a solid foundation and then iterate, which is why I focus on creating robust frameworks before adding content. This allows for scalable and maintainable projects.</p>
+                    <p>When I'm not working on my main projects, I'm usually tinkering with new technologies or contributing to open source projects.</p>
+                </div>
+                <div class="skills">
+                    <span class="skill">JavaScript</span>
+                    <span class="skill">HTML/CSS</span>
+                    <span class="skill">Unity</span>
+                    <span class="skill">C#</span>
+                    <span class="skill">Python</span>
+                    <span class="skill">Game Development</span>
+                    <span class="skill">AI Programming</span>
+                    <span class="skill">Web Design</span>
+                    <span class="skill">ES6 Modules</span>
+                    <span class="skill">Genetic Algorithms</span>
+                    <span class="skill">3D Modeling</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="container">
+            <div class="social-links">
+                <a href="https://github.com/AIGsniperYt"><i class="fab fa-github"></i></a>
+                <a href="https://aigsniper.itch.io/"><i class="fab fa-itch-io"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-youtube"></i></a>
+            </div>
+            <p class="copyright">© 2025 AIGsniper. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Add subtle animation to project cards on scroll
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = 1;
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Apply animation to project cards
+        window.addEventListener('DOMContentLoaded', () => {
+            const projectCards = document.querySelectorAll('.project-card');
+            projectCards.forEach(card => {
+                card.style.opacity = 0;
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                observer.observe(card);
+            });
+            
+            // Add subtle gradient animation to hero background
+            const hero = document.querySelector('.hero');
+            let hueRotation = 0;
+            setInterval(() => {
+                hueRotation = (hueRotation + 0.1) % 360;
+                hero.style.background = `linear-gradient(${45 + Math.sin(Date.now()/5000)*10}deg, var(--dark-purple-2), var(--dark-purple-3))`;
+            }, 50);
+        });
+    </script>
+</body>
+</html>
