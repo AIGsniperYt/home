@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D to Net Tool</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="controls">
+  Width: <input type="number" id="width" value="5"> cm
+  Height: <input type="number" id="height" value="5"> cm
+  Depth: <input type="number" id="depth" value="5"> cm
+  <button id="update3d">Update 3D</button>
+  <button id="generateNet">Generate Net</button>
+  <button id="exportNet">Export Net</button>
+</div>
+
+<div id="views">
+  <canvas id="view3d"></canvas>
+  <svg id="view2d"></svg>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

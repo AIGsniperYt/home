@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sticky Header Example</title>
+<style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: white;
+    }
+
+    pre {
+      color: aliceblue;
+      background-color: #333;
+      font-family: monospace;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .sticky-header {
+      background-color: #333;
+      padding: 10px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .nav-item {
+      margin: 0 15px;
+    }
+    .nav-link {
+      text-decoration: none;
+      color: white;
+      transition: color 0.3s ease;
+    }
+    .nav-link:hover {
+      color: #f39c12;
+    }
+    .main-content {
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+<header class="sticky-header">
+    <div class="container">
+        <nav>
+            <ul class="nav-list">
+                <li class="nav-item"><a class="nav-link" href="../index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Services</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+                <li class="nav-item"><a class="nav-link" href="../index.html">Portfolio</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+<div class="container">
+  <h1>Welcome to Our Website</h1>
+  <p>This is a sample website with a sticky header.</p>
+  <article>
+  <h2>Creating a Sticky Header for Your Website</h2>
+  <p>One of the common features that can greatly enhance the user experience of a website is a sticky header. A sticky header stays at the top of the page, even when you scroll down, providing quick access to essential navigation links. In this article, we'll guide you through the process of creating a sticky header for your website.</p>
+
+  <h3>HTML Structure</h3>
+  <p>Before we delve into the CSS and JavaScript for our sticky header, let's set up the basic HTML structure. You'll need an HTML element for your header, typically placed within the <code>&lt;header&gt;</code> tag, and the main content of your webpage. Here's a simplified example:</p>
+
+  <pre>
+      <code>
+&lt;header class="sticky"&gt;
+  &lt;nav&gt;
+      &lt;ul&gt;
+          &lt;li&gt;&lt;a href="#"&gt;Home&lt;/a&gt;&lt;/li&gt;
+          &lt;li&gt;&lt;a href="#"&gt;About&lt;/a&gt;&lt;/li&gt;
+          &lt;li&gt;&lt;a href="#"&gt;Portfolio&lt;/a&gt;&lt;/li&gt;
+          &lt;li&gt;&lt;a href="#"&gt;Contact&lt;/a&gt;&lt;/li&gt;
+      &lt;/ul&gt;
+  &lt;/nav&gt;
+&lt;/header&gt;
+
+&lt;!-- Rest of your webpage content goes here --&gt;
+      </code>
+  </pre>
+
+  <p>In this example, we've created a header with navigation links. The <code>class="sticky"</code> attribute is used to identify the header that we want to make sticky.</p>
+
+  <h3>CSS Styling</h3>
+  <p>Now, let's apply the CSS to make our header sticky. Here's a minimal CSS code:</p>
+
+  <pre>
+      <code>
+/* Add general styles here */
+
+.sticky {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-color: #f8f8f8;
+}
+
+/* Add more styles as needed */
+      </code>
+  </pre>
+
+  <p>The <code>position: fixed;</code> property makes the header stick to the top, and the <code>top: 0;</code> tells the browser to put this at the top relative to the container. Since this is the viewport, you are putting this at the top of your viewport. The other styles determine its appearance. You can customize these styles to match your website's design.</p>
+
+  <h3>JavaScript (Optional)</h3>
+  <p>In most cases, the CSS provided above is sufficient to create a sticky header. However, if you want more advanced features, such as smooth scrolling or animations, you can use JavaScript. Here's a simple example:</p>
+
+  <pre>
+      <code>
+// JavaScript code (optional)
+window.addEventListener("scroll", function() {
+  const header = document.querySelector(".sticky");
+  if (window.scrollY > 100) {
+      header.classList.add("scrolled");
+  } else {
+      header.classList.remove("scrolled");
+  }
+});
+      </code>
+  </pre>
+
+  <p>This JavaScript code adds a class, <code>scrolled</code>, to the header when the user scrolls down the page. You can then apply additional styling or animations to the header when this class is present.</p>
+
+  <p>That's it! You've learned how to create a sticky header for your website.</p>
+  </article>
+
+</div>
+</body>
+</html>

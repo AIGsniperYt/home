@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      border: 1px solid #000;
+      overflow: hidden;
+    }
+
+    .player {
+      width: 30px;
+      height: 30px;
+      background-color: blue;
+      position: absolute;
+      transform-origin: center;
+    }
+
+    .enemy {
+      width: 20px;
+      height: 20px;
+      background-color: green;
+      position: absolute;
+    }
+
+    .bullet {
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      position: absolute;
+    }
+
+    #health-bar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 100px;
+      height: 20px;
+      background-color: #00ff00;
+      border: 1px solid #000;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="health-bar"></div>
+    <div id="score">Score: 0</div>
+  </div>
+
+  <script>
+    const gameContainer = document.getElementById("game-container");
+    const healthBar = document.getElementById("health-bar");
+    const scoreDisplay = document.getElementById("score");
+    const player = document.createElement("div");
+    player.className = "player";
+    gameContainer.appendChild(player);
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let playerX = 0;
+    let playerY = 0;
+
+    let wPressed = false;
+    let aPressed = false;
+    let sPressed = false;
+    let dPressed = false;
+
+    let playerHealth = 100; // Initial health
+    let playerScore = 0;
+
+    // Store enemy health values
+    const enemyHealth = {};
+
+    function updateHealthBar() {
+      healthBar.style.width = playerHealth + "px";
+      if (playerHealth <= 0) {
+        // Game over logic (you can customize this)
+        alert("Game Over! Score: " + playerScore);
+        playerHealth = 100; // Reset health for a new game
+        playerScore = 0;
+        updateHealthBar();
+      }
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = "Score: " + playerScore;
+    }
+
+    document.addEventListener("mousemove", (event) => {
+      mouseX = event.clientX - gameContainer.getBoundingClientRect().left;
+      mouseY = event.clientY - gameContainer.getBoundingClientRect().top;
+
+      const angle = Math.atan2(mouseY - player.offsetTop, mouseX - player.offsetLeft);
+      player.style.transform = `rotate(${angle}rad)`;
+    });
+
+    document.addEventListener("keydown", (event) => {
+      switch (event.key) {
+        case "w":
+          wPressed = true;
+          break;
+        case "a":
+          aPressed = true;
+          break;
+        case "s":
+          sPressed = true;
+          break;
+        case "d":
+          dPressed = true;
+          break;
+      }
+    });
+
+    document.addEventListener("keyup", (event) => {
+      switch (event.key) {
+        case "w":
+          wPressed = false;
+          break;
+        case "a":
+          aPressed = false;
+          break;
+        case "s":
+          sPressed = false;
+          break;
+        case "d":
+          dPressed = false;
+          break;
+      }
+    });
+
+    function movePlayer() {
+      const speed = 5;
+
+      if (wPressed) {
+        playerY -= speed;
+      }
+      if (aPressed) {
+        playerX -= speed;
+      }
+      if (sPressed) {
+        playerY += speed;
+      }
+      if (dPressed) {
+        playerX += speed;
+      }
+
+      player.style.left = playerX + "px";
+      player.style.top = playerY + "px";
+
+      requestAnimationFrame(movePlayer);
+    }
+
+    movePlayer(); // Start the continuous movement
+
+    function createBullet(x, y) {
+      const bullet = document.createElement("div");
+      bullet.className = "bullet";
+
+      bullet.style.left = x + "px";
+      bullet.style.top = y + "px";
+
+      gameContainer.appendChild(bullet);
+
+      // Move the bullet in the direction of the player
+      moveBullet(bullet, player.style.transform);
+    }
+
+    function moveBullet(bullet, transform) {
+      const speed = 5;
+
+      function removeBullet() {
+        bullet.remove();
+      }
+
+      function checkBoundary() {
+        const rect = gameContainer.getBoundingClientRect();
+        const bulletRect = bullet.getBoundingClientRect();
+
+        if (
+          bulletRect.right < rect.left ||
+          bulletRect.left > rect.right ||
+          bulletRect.bottom < rect.top ||
+          bulletRect.top > rect.bottom
+        ) {
+          removeBullet();
+        }
+      }
+
+      function checkCollision() {
+        const enemies = document.getElementsByClassName("enemy");
+
+        for (const enemy of enemies) {
+          const bulletRect = bullet.getBoundingClientRect();
+          const enemyRect = enemy.getBoundingClientRect();
+
+          if (
+            bulletRect.right > enemyRect.left &&
+            bulletRect.left < enemyRect.right &&
+            bulletRect.bottom > enemyRect.top &&
+            bulletRect.top < enemyRect.bottom
+          ) {
+            // Collision with enemy
+            removeBullet();
+            enemyHealth[enemy.id] -= 10; // Decrease enemy health
+            if (enemyHealth[enemy.id] <= 0) {
+              // Enemy destroyed
+              playerScore += 10;
+              updateScore();
+              enemy.remove();
+            }
+          }
+        }
+      }
+
+      function updatePosition() {
+        const radians = parseFloat(transform.split("(")[1].split("rad")[0]);
+        const deltaX = Math.cos(radians) * speed;
+        const deltaY = Math.sin(radians) * speed;
+
+        const currentLeft = parseFloat(bullet.style.left);
+        const currentTop = parseFloat(bullet.style.top);
+
+        bullet.style.left = currentLeft + deltaX + "px";
+        bullet.style.top = currentTop + deltaY + "px";
+
+        checkCollision();
+        checkBoundary();
+      }
+
+      setInterval(updatePosition, 16); // Update bullet position every 16ms (60 FPS)
+    }
+
+    function createEnemy() {
+      const enemy = document.createElement("div");
+      enemy.className = "enemy";
+      enemy.id = "enemy-" + Date.now(); // Unique ID for each enemy
+      enemyHealth[enemy.id] = 20; // Initial health for each enemy
+
+      const enemyX = Math.random() * (gameContainer.offsetWidth - 20);
+      const enemyY = Math.random() * (gameContainer.offsetHeight - 20);
+
+      enemy.style.left = enemyX + "px";
+      enemy.style.top = enemyY + "px";
+
+      gameContainer.appendChild(enemy);
+
+      moveEnemy(enemy);
+    }
+
+    function moveEnemy(enemy) {
+      const speed = 2;
+
+      function removeEnemy() {
+        enemy.remove();
+      }
+
+      function checkCollision() {
+        const playerRect = player.getBoundingClientRect();
+        const enemyRect = enemy.getBoundingClientRect();
+
+        if (
+          playerRect.right > enemyRect.left &&
+          playerRect.left < enemyRect.right &&
+          playerRect.bottom > enemyRect.top &&
+          playerRect.top < enemyRect.bottom
+        ) {
+          // Collision with player
+          playerHealth -= 10;
+          updateHealthBar();
+          removeEnemy();
+        }
+      }
+
+      function updatePosition() {
+        const playerRect = player.getBoundingClientRect();
+        const enemyRect = enemy.getBoundingClientRect();
+
+        const angle = Math.atan2(playerRect.top - enemyRect.top, playerRect.left - enemyRect.left);
+        const deltaX = Math.cos(angle) * speed;
+        const deltaY = Math.sin(angle) * speed;
+
+        const currentLeft = parseFloat(enemy.style.left);
+        const currentTop = parseFloat(enemy.style.top);
+
+        enemy.style.left = currentLeft + deltaX + "px";
+        enemy.style.top = currentTop + deltaY + "px";
+
+        checkCollision();
+      }
+
+      setInterval(updatePosition, 16); // Update enemy position every 16ms (60 FPS)
+    }
+
+    // Example usage
+    gameContainer.addEventListener("click", () => {
+      createBullet(player.offsetLeft, player.offsetTop);
+    });
+
+    // Initial enemy creation
+    createEnemy();
+    setInterval(createEnemy, 1000); // Create a new enemy every 3 seconds
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural Cave Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="controls">
+        <label for="noiseDensity">Noise Density: </label>
+        <input type="range" id="noiseDensity" min="0" max="100" value="45">
+        <span id="noiseDensityValue">45%</span>
+        <button id="refreshBtn">Refresh</button>
+        <button id="iterateCA">Run Cellular Automata</button>
+        <button id="toggleMode">?</button>
+        <button id="placeLightsBtn">Place Light Sources</button>
+
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

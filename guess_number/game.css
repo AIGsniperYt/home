@@ -1,0 +1,79 @@
+/* Add a background color and center the game content */
+body {
+    background-color: #242424;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh; /* Adjust as needed */
+    margin: 0;
+    font-family: Arial, sans-serif;
+    color: #fff;
+}
+
+h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+    color: #fff;
+}
+/* Style the game container */
+#div {
+    width: 50vw;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10vh;
+    justify-content: center;
+    background-color: #4e4e4e;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+/* Style the input and button */
+#guessInput {
+    display: flex;
+    align-self: center;
+    padding: 5px;
+    width: 100px;
+    text-align: center;
+    font-size: 16px;
+    margin: 5px;
+}
+#guessButton {
+    display:flex;
+    align-self:center;
+    margin: 5px;
+    padding: 8px 20px; /* Adjust padding to make the button larger */
+    font-size: 16px;
+    background-color: #333; /* Change background color to a different shade of blue */
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+#guessButton:hover {
+    background-color: #ff7f50; /* Darken the color slightly on hover */
+}
+#guessButton:active {
+    transform: scale(1.2) rotate(-5deg); /* Apply scale transform on button click */
+}
+
+#copyright {
+    font-family: Arial, sans-serif;
+}
+
+a {
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px;
+    color: #98FF98;
+}
+
+a:hover {
+    color: aquamarine;
+} 
+

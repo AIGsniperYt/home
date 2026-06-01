@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #1e1e1e;
+  color: white;
+}
+#controls {
+  padding: 10px;
+  background: #333;
+}
+#views {
+  display: flex;
+}
+#view3d {
+  flex: 1;
+  height: 90vh;
+  background: black;
+}
+#view2d {
+  flex: 1;
+  height: 90vh;
+  background: white;
+}

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Simplex Noise Grid</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+
+    <script>
+        // Set up scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Make canvas responsive to window resizing
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+
+        // Simplex noise setup for initial black-and-white terrain generation
+        const simplex = new SimplexNoise();
+        const gridSize = 60;
+        const cellSize = 0.5;
+
+        const geometry = new THREE.BoxGeometry(cellSize, cellSize, cellSize);
+        for (let x = 0; x < gridSize; x++) {
+            for (let z = 0; z < gridSize; z++) {
+                const noiseValue = simplex.noise2D(x / 10, z / 10);
+                const height = (noiseValue + 1) * 2.5;
+                const grayscale = (noiseValue + 1) * 0.5;
+
+                const material = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(grayscale, grayscale, grayscale)
+                });
+
+                const cube = new THREE.Mesh(geometry, material);
+                cube.position.set(x * cellSize, height / 2, z * cellSize);
+                cube.scale.y = height;height
+
+                scene.add(cube);
+            }
+        }
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(0, 50, 50);
+        scene.add(pointLight);
+
+        // Camera positioning
+        camera.position.set(0, 1.6, 10);
+
+        // PointerLockControls for movement
+        const controls = new THREE.PointerLockControls(camera, document.body);
+        document.addEventListener('click', () => controls.lock());
+
+        // Movement with damping and velocity, relative to camera direction
+        const keys = { forward: false, backward: false, left: false, right: false, up: false, down: false };
+        let velocity = { x: 0, y: 0, z: 0 };
+        const moveSpeed = 0.05;
+
+        document.addEventListener('keydown', (event) => {
+            switch (event.code) {
+                case 'KeyW': keys.forward = true; break;
+                case 'KeyS': keys.backward = true; break;
+                case 'KeyA': keys.left = true; break;
+                case 'KeyD': keys.right = true; break;
+                case 'KeyE': keys.up = true; break;
+                case 'KeyQ': keys.down = true; break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.code) {
+                case 'KeyW': keys.forward = false; break;
+                case 'KeyS': keys.backward = false; break;
+                case 'KeyA': keys.left = false; break;
+                case 'KeyD': keys.right = false; break;
+                case 'KeyE': keys.up = false; break;
+                case 'KeyQ': keys.down = false; break;
+            }
+        });
+
+        // Update movement with horizontal constraint for W and S
+        function updateMovement() {
+            velocity.x -= velocity.x * 0.1;
+            velocity.z -= velocity.z * 0.1;
+            velocity.y -= velocity.y * 0.1;
+
+            // Move forward and backward horizontally
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            forward.y = 0;  // Ensure movement is horizontal by zeroing out the y component
+            forward.normalize();
+
+            if (keys.forward) {
+                velocity.x += forward.x * moveSpeed;
+                velocity.z += forward.z * moveSpeed;
+            }
+            if (keys.backward) {
+                velocity.x -= forward.x * moveSpeed;
+                velocity.z -= forward.z * moveSpeed;
+            }
+
+            // Left and right movement
+            const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0));
+            if (keys.left) {
+                velocity.x -= right.x * moveSpeed;
+                velocity.z -= right.z * moveSpeed;
+            }
+            if (keys.right) {
+                velocity.x += right.x * moveSpeed;
+                velocity.z += right.z * moveSpeed;
+            }
+
+            // Up and down movement at the same speed
+            if (keys.up) velocity.y += moveSpeed;
+            if (keys.down) velocity.y -= moveSpeed;
+
+            camera.position.x += velocity.x;
+            camera.position.z += velocity.z;
+            camera.position.y += velocity.y;
+
+            // Prevent going below ground level
+            if (camera.position.y < 0) camera.position.y = 0;
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            updateMovement();
+            renderer.render(scene, camera);
+        }
+
+        // Start the animation loop
+        animate();
+    </script>
+</body>
+</html>

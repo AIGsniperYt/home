@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplayer Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    .chat-container {
+      width: 80%;
+      margin: 0 auto;
+    }
+
+    #chat-box {
+      height: 300px;
+      overflow-y: scroll;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    #user-input {
+      width: calc(100% - 70px);
+      padding: 5px;
+    }
+
+    button {
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div id="chat-box"></div>
+    <input type="text" id="user-input" placeholder="Type your message...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on("message", (message) => {
+      appendMessage(message);
+    });
+
+    function sendMessage() {
+      const userInput = document.getElementById("user-input").value;
+      if (userInput.trim() !== "") {
+        appendMessage("You: " + userInput);
+        socket.emit("message", userInput);
+        document.getElementById("user-input").value = "";
+      }
+    }
+
+    function appendMessage(message) {
+      const chatBox = document.getElementById("chat-box");
+      const messageElement = document.createElement("p");
+      messageElement.textContent = message;
+      chatBox.appendChild(messageElement);
+      // Scroll to the bottom of the chat box
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>

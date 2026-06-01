@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="game.css">
+  <title>1v1</title>
+</head>
+<body>
+  <div id="player1" class="player"></div>
+  <div id="player2" class="player"></div>
+  <div class="bullet"></div>
+
+  <!-- Health Bar for Player 1 -->
+  <div id="healthBar1" class="healthBar">
+    <div id="health1" class="health"></div>
+    <div id="healthText1" class="healthText">Health: 200</div>
+  </div>
+
+  <!-- Health Bar for Player 2 -->
+  <div id="healthBar2" class="healthBar">
+    <div id="health2" class="health"></div>
+    <div id="healthText2" class="healthText">Health: 200</div>
+  </div>
+
+  <!-- The Menu -->
+  <div id="menuModal" class="modal">
+    <div class="modal-content">
+      <h1>1v1</h1>
+      <button id="playButton">Play</button>
+    </div>
+  </div>
+  
+  <div id="countdownDisplay" class="countdown"></div>
+  
+  <!-- Winner Modal -->
+    <div id="winnerModal" class="modal">
+        <div class="modal-content">
+            <h2 id="winnerText"></h2>
+            <button id="playAgainButton">Play Again</button>
+        </div>
+    </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+    "player_health": 100,
+    "player_position": [
+        0,
+        0
+    ],
+    "current_level": 3,
+    "level_seeds": {},
+    "inventory": {
+        "weapons": [],
+        "health_items": [],
+        "torches": 0
+    },
+    "dark_level_chance": 0.1
+}

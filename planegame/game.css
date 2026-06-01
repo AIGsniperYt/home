@@ -1,0 +1,72 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+    overflow: hidden;
+}
+
+.wrapper {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+}
+
+#plane1 {
+    display: block;
+    position: fixed;
+    width: 100px;
+    z-index: 2;
+}
+#plane2 {
+    display: block;
+    position: fixed;
+    width: 100px;
+    z-index: 3;
+}
+.bullet {
+    background-color: yellow;
+    width: 50px;
+    height: 10px;
+    position: absolute;
+    border-radius: 10%;
+    display: none;
+    z-index: 0;
+    top: 0px;
+    left: 0px;
+}
+
+/* Health */
+.healthBar {
+    position: absolute;
+    width: 200px;
+    height: 20px;
+    background-color: transparent;
+    border: 5px solid white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.healthText {
+    color: white;
+    font-weight: bold;
+    margin-top: auto; 
+    z-index: 2;
+}
+
+.health {
+    height: 100%;
+    background-color: green;
+    flex-shrink: 0;
+    position: absolute;
+    left: 0;
+    transition: width 0.5s ease;
+}
+
+#health1, #health2 {
+    height: 20px;
+    width: 200px;
+    background-color: green;
+    display: block;
+    z-index: 0;
+}

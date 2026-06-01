@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pixel Art Snipper</title>
+<style>
+  :root { --bg:#111; --panel:#1b1f26; --muted:#9aa3b2; --accent:#0a84ff; }
+  html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#eef;padding:14px;}
+  .top {display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+  input[type="file"]{background:#222;border:1px solid #333;padding:6px;color:#fff;}
+  .control {background:var(--panel);padding:10px;border-radius:8px;border:1px solid #222;color:var(--muted);display:flex;gap:8px;align-items:center;}
+  button{background:var(--accent);border:none;padding:8px 10px;color:#fff;border-radius:6px;cursor:pointer;}
+  button:active{transform:translateY(1px)}
+  #canvas-container{position:relative;display:inline-block;border:1px solid #2a2a2a; background:#333; overflow:hidden;}
+  canvas{display:block; image-rendering: pixelated; background:transparent; cursor:crosshair;}
+  #selection-box{position:absolute;border:2px solid rgba(255,60,60,0.95);box-sizing:border-box;pointer-events:none;display:none;}
+  .info{color:var(--muted);font-size:13px;margin-left:6px}
+  label{color:var(--muted);font-size:13px}
+  .small{font-size:12px;color:var(--muted);}
+  input[type="number"], input[type="text"], select {background:#111;border:1px solid #222;padding:6px;border-radius:6px;color:#fff}
+  .row {display:flex;gap:8px;align-items:center}
+  #grid-overlay{position:absolute;top:0;left:0;pointer-events:none;}
+</style>
+</head>
+<body>
+  <h2>Pixel Art Snipper</h2>
+  <div class="top">
+    <div class="control row">
+      <input id="image-upload" type="file" accept="image/*">
+      <div class="small">Zoom: <input id="zoom" type="range" min="1" max="24" value="8"></div>
+      <div class="small">Export scale: <input id="export-scale" type="number" value="1" min="1" step="1" style="width:60px"></div>
+      <label class="small"><input id="grid-toggle" type="checkbox" checked> Pixel grid</label>
+      <label class="small"><input id="snap-toggle" type="checkbox" checked> Snap</label>
+    </div>
+
+    <div class="control row" style="margin-left:6px">
+      <input id="filename" type="text" value="sprite.png" style="width:150px">
+      <button id="download-btn">Download (Enter)</button>
+      <button id="clear-btn" title="Clear selection / image">Clear</button>
+      <div class="info" id="dim">No image</div>
+    </div>
+  </div>
+
+  <!-- grid controls -->
+  <div class="control row">
+    <div class="small">Cell W:<input id="grid-w" type="number" value="16" min="1" style="width:60px"></div>
+    <div class="small">Cell H:<input id="grid-h" type="number" value="16" min="1" style="width:60px"></div>
+    <div class="small">Offset X:<input id="grid-ox" type="number" value="0" style="width:60px"></div>
+    <div class="small">Offset Y:<input id="grid-oy" type="number" value="0" style="width:60px"></div>
+    <label class="small"><input id="overlay-toggle" type="checkbox"> Show overlay grid</label>
+    <button id="bulk-btn">Bulk Download Grid</button>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="main-canvas"></canvas>
+    <canvas id="grid-overlay"></canvas>
+    <div id="selection-box"></div>
+  </div>
+
+<script>
+(() => {
+  const fileInput = document.getElementById('image-upload');
+  const canvas = document.getElementById('main-canvas');
+  const ctx = canvas.getContext('2d');
+  const selBox = document.getElementById('selection-box');
+  const container = document.getElementById('canvas-container');
+  const zoomInput = document.getElementById('zoom');
+  const gridToggle = document.getElementById('grid-toggle');
+  const snapToggle = document.getElementById('snap-toggle');
+  const exportScaleInput = document.getElementById('export-scale');
+  const filenameInput = document.getElementById('filename');
+  const downloadBtn = document.getElementById('download-btn');
+  const bulkBtn = document.getElementById('bulk-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  const dimText = document.getElementById('dim');
+
+  const overlay = document.getElementById('grid-overlay');
+  const octx = overlay.getContext('2d');
+  const gridWInput = document.getElementById('grid-w');
+  const gridHInput = document.getElementById('grid-h');
+  const gridOxInput = document.getElementById('grid-ox');
+  const gridOyInput = document.getElementById('grid-oy');
+  const overlayToggle = document.getElementById('overlay-toggle');
+
+  let img = null;
+  let scale = Number(zoomInput.value) || 8;
+  let isSelecting = false;
+  let startX = 0, startY = 0;
+  let sel = { x:0, y:0, w:0, h:0, active:false };
+  let shiftSquare = false;
+
+  function setScale(s){
+    scale = s;
+    canvas.style.width = (canvas.width * scale) + 'px';
+    canvas.style.height = (canvas.height * scale) + 'px';
+    overlay.width = canvas.width;
+    overlay.height = canvas.height;
+    overlay.style.width = canvas.style.width;
+    overlay.style.height = canvas.style.height;
+    updateGrid();
+    drawOverlay();
+    updateSelectionBox();
+  }
+
+  function updateGrid(){
+    if (!gridToggle.checked) {
+      container.style.backgroundImage = 'none';
+      return;
+    }
+    const s = Math.max(1, Math.floor(scale));
+    container.style.backgroundImage = 
+      `linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+       linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)`;
+    container.style.backgroundSize = `${s}px ${s}px, ${s}px ${s}px`;
+  }
+
+  function drawOverlay(){
+    octx.clearRect(0,0,overlay.width,overlay.height);
+    if (!overlayToggle.checked) return;
+    const gw = Math.max(1, parseInt(gridWInput.value)||1);
+    const gh = Math.max(1, parseInt(gridHInput.value)||1);
+    const ox = parseInt(gridOxInput.value)||0;
+    const oy = parseInt(gridOyInput.value)||0;
+    octx.strokeStyle = 'rgba(0,255,0,0.5)';
+    octx.lineWidth = 1;
+    octx.beginPath();
+    for (let x = ox; x < overlay.width; x += gw) {
+      octx.moveTo(x+0.5,0); octx.lineTo(x+0.5,overlay.height);
+    }
+    for (let y = oy; y < overlay.height; y += gh) {
+      octx.moveTo(0,y+0.5); octx.lineTo(overlay.width,y+0.5);
+    }
+    octx.stroke();
+  }
+
+  function clampSelection(){
+    if (!img) return;
+    sel.x = Math.max(0, Math.min(sel.x, img.width-1));
+    sel.y = Math.max(0, Math.min(sel.y, img.height-1));
+    sel.w = Math.max(1, Math.min(sel.w, img.width - sel.x));
+    sel.h = Math.max(1, Math.min(sel.h, img.height - sel.y));
+  }
+
+  function updateSelectionBox(){
+    if (!sel.active) { selBox.style.display = 'none'; dimText.textContent = `Image: ${img?img.width+'×'+img.height:'—'}`; return; }
+    selBox.style.display = 'block';
+    selBox.style.left = (sel.x * scale) + 'px';
+    selBox.style.top  = (sel.y * scale) + 'px';
+    selBox.style.width = (sel.w * scale) + 'px';
+    selBox.style.height = (sel.h * scale) + 'px';
+    dimText.textContent = `Selection: ${sel.w}×${sel.h} px • Image: ${img?img.width+'×'+img.height:'—'}`;
+  }
+
+  function imgToLogical(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    const px = (clientX - rect.left) / scale;
+    const py = (clientY - rect.top ) / scale;
+    return { x: Math.floor(px), y: Math.floor(py) };
+  }
+
+  // load image
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const i = new Image();
+      i.onload = () => {
+        img = i;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0);
+        setScale(Number(zoomInput.value));
+        sel.active = false;
+        updateSelectionBox();
+      };
+      i.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  });
+
+  // selection tool events
+  canvas.addEventListener('mousedown', (e) => {
+    if (!img) return;
+    const p = imgToLogical(e.clientX, e.clientY);
+    startX = p.x; startY = p.y;
+    isSelecting = true;
+    sel.active = true;
+    sel.x = startX; sel.y = startY; sel.w = 1; sel.h = 1;
+    shiftSquare = e.shiftKey;
+    updateSelectionBox();
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!img || !isSelecting) return;
+    const p = imgToLogical(e.clientX, e.clientY);
+    let x = Math.min(startX, p.x);
+    let y = Math.min(startY, p.y);
+    let w = Math.abs(p.x - startX) + 1;
+    let h = Math.abs(p.y - startY) + 1;
+    if (shiftSquare) { let s = Math.max(w,h); w=h=s; if(p.x<startX) x=startX-(s-1); if(p.y<startY) y=startY-(s-1); }
+    sel.x=x; sel.y=y; sel.w=w; sel.h=h;
+    if (snapToggle.checked){ sel.x=Math.round(sel.x); sel.y=Math.round(sel.y); sel.w=Math.round(sel.w); sel.h=Math.round(sel.h); }
+    clampSelection(); updateSelectionBox();
+  });
+  window.addEventListener('mouseup', ()=>{ if(isSelecting){isSelecting=false; if(sel.w<=0||sel.h<=0) sel.active=false; updateSelectionBox(); } });
+
+  // download
+  function downloadSelection(){
+    if (!img) return alert('No image loaded.');
+    if (!sel.active){ return alert('No selection.'); }
+    saveCrop(sel.x, sel.y, sel.w, sel.h, filenameInput.value || 'sprite.png');
+  }
+
+  function saveCrop(x,y,w,h,name){
+    const expScale = Math.max(1, Math.floor(Number(exportScaleInput.value) || 1));
+    const out = document.createElement('canvas');
+    out.width = w*expScale; out.height = h*expScale;
+    const octx = out.getContext('2d');
+    octx.imageSmoothingEnabled = false;
+    octx.drawImage(img,x,y,w,h,0,0,out.width,out.height);
+    const link = document.createElement('a');
+    link.download = name.endsWith('.png')?name:(name+'.png');
+    link.href = out.toDataURL('image/png');
+    link.click();
+  }
+
+  // bulk download grid
+  function bulkDownload(){
+    if (!img) return alert('No image loaded.');
+    const gw = Math.max(1, parseInt(gridWInput.value)||1);
+    const gh = Math.max(1, parseInt(gridHInput.value)||1);
+    const ox = parseInt(gridOxInput.value)||0;
+    const oy = parseInt(gridOyInput.value)||0;
+    let count=0;
+    for (let y=oy; y<img.height; y+=gh){
+      for (let x=ox; x<img.width; x+=gw){
+        const w = Math.min(gw,img.width-x);
+        const h = Math.min(gh,img.height-y);
+        count++;
+        saveCrop(x,y,w,h,`cell_${count}.png`);
+      }
+    }
+  }
+
+  downloadBtn.addEventListener('click', downloadSelection);
+  bulkBtn.addEventListener('click', bulkDownload);
+
+  // clear
+  clearBtn.addEventListener('click', () => {
+    img = null; canvas.width = canvas.height = 0; sel.active = false;
+    selBox.style.display = 'none'; dimText.textContent = 'No image';
+    fileInput.value = '';
+    container.style.backgroundImage = 'none';
+    octx.clearRect(0,0,overlay.width,overlay.height);
+  });
+
+  zoomInput.addEventListener('input', ()=>setScale(Number(zoomInput.value)));
+  gridToggle.addEventListener('change', updateGrid);
+  [gridWInput,gridHInput,gridOxInput,gridOyInput,overlayToggle].forEach(el=>{el.addEventListener('input',drawOverlay); el.addEventListener('change',drawOverlay);});
+  window.addEventListener('resize', ()=>setScale(scale));
+  updateGrid(); dimText.textContent = 'No image';
+})();
+</script>
+</body>
+</html>

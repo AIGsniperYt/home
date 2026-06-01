@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Group Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        #chat-box {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: white;
+            overflow-y: scroll;
+        }
+        #message-box {
+            width: calc(100% - 60px);
+            padding: 10px;
+        }
+        #send-btn {
+            padding: 10px;
+            width: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Basic Group Chat</h1>
+    <div id="chat-box"></div>
+    <input type="text" id="message-box" placeholder="Enter message">
+    <button id="send-btn">Send</button>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const chatBox = document.getElementById('chat-box');
+        const messageBox = document.getElementById('message-box');
+        const sendBtn = document.getElementById('send-btn');
+
+        // Listen for incoming messages
+        ws.onmessage = function(event) {
+            const newMessage = document.createElement('div');
+            newMessage.textContent = event.data; // Message will now include the user tag and message
+            chatBox.appendChild(newMessage);
+            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the latest message
+        };
+
+        // Send message on button click
+        sendBtn.addEventListener('click', function() {
+            const message = messageBox.value;
+            if (message) {
+                ws.send(message);
+                messageBox.value = ''; // Clear input
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #1a2a6c, #3b1e68);
+    margin: 0;
+    padding: 20px;
+    color: white;
+    text-align: center;
+    min-height: 100vh;  /* Minimum height to ensure gradient applies for short pages */
+    background-attachment: fixed;  /* Ensures gradient stays in place while scrolling */
+}
+
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+    width: 12px;  /* Width of the scrollbar */
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #3b1e68, #1a2a6c);  /* Gradient for the scrollbar thumb */
+    border-radius: 10px;  /* Rounded corners */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 188, 212, 0.8);  /* Teal hover color */
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.2);  /* Light background for the scrollbar track */
+    border-radius: 10px;  /* Rounded corners */
+}
+
+header {
+    margin-bottom: 40px;
+}
+
+a {
+    target: _blank;
+}
+.tag {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    color: white;
+    margin-top: 5px;
+}
+
+.favorite {
+    background-color: #ff6b6b; /* Red for favorite */
+}
+
+.under-development {
+    background-color: #ffcc00; /* Yellow for under development */
+}
+
+.discontinued {
+    background-color: #6c757d; /* Gray for discontinued */
+}
+
+.legacy {
+    background-color: #007bff; /* Blue for legacy */
+}
+
+
+.portfolio-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: visible; /* Allow continuous scroll */
+    height: auto; /* No more height limit */
+}
+
+.project-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    height: 400px;
+    width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.project-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.192);
+    background: rgba(255, 255, 255, 0.171);
+}
+
+.card-content {
+    text-align: center;
+    padding: 20px;
+}
+
+.card-content h2 {
+    font-size: 24px;
+    margin-top: 0;
+    color: #f4bfbf;
+}
+
+.card-content p {
+    font-size: 18px;
+    color: #f7d794;
+}
+
+.card-content a {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    text-decoration: none;
+    color: #e0aaff;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.card-content a:hover {
+    background-color: #ffd166;
+    color: #1b263b;
+}

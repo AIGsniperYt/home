@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Past Papers Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+
+body {
+  margin: 0;
+  background: #121212;
+  color: #eee;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+header {
+  padding: 1rem 1.5rem;
+  background: #1f1f1f;
+  font-size: 1.5rem;
+  font-weight: 600;
+  user-select: none;
+  border-bottom: 1px solid #333;
+}
+
+#bgCanvas {
+  opacity: 0.3;
+  background: transparent;
+}
+
+.tabs {
+  display: flex;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 0.8rem 0;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.tab.active {
+  border-bottom-color: #0af;
+  color: #0af;
+}
+
+main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  table-layout: fixed;
+}
+
+th, td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid #333;
+  text-align: left;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+th {
+  color: #0af;
+  user-select: none;
+}
+
+td.editable {
+  cursor: pointer;
+  position: relative;
+}
+
+td.editable:hover {
+  background: #222;
+}
+
+.header-actions {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.secondary-button {
+  background: transparent;
+  border: 1px solid #0af;
+  color: #0af;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.secondary-button:hover {
+  background: #0af2;
+  color: white;
+}
+
+.primary-button {
+  background: #0af;
+  color: #121212;
+  border: none;
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.primary-button:hover {
+  background: #08c;
+}
+
+.edit-icon {
+  width: 16px;
+  height: 16px;
+  fill: #0af;
+  margin-left: 8px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+input[type="text"],
+input[type="number"] {
+  background: #222;
+  border: 1px solid #333;
+  color: #eee;
+  font-size: 1rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input:focus {
+  outline: none;
+  border-color: #0af;
+  box-shadow: 0 0 6px #0af5;
+}
+
+.add-form {
+  margin-top: 1rem;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.add-form input {
+  flex: 1 1 150px;
+}
+
+.add-form button {
+  font-size: 1rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #0af;
+  color: #121212;
+}
+
+.add-form button:hover {
+  background: #08c;
+}
+
+.message {
+  margin-top: 0.6rem;
+  color: #0fa;
+  font-size: 0.9rem;
+}
+
+main::-webkit-scrollbar {
+  width: 8px;
+}
+
+main::-webkit-scrollbar-thumb {
+  background: #0af6;
+  border-radius: 4px;
+}
+
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- MODALS (GLOBAL UPGRADE) ---------- */
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(1px);
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-row {
+  margin-bottom: 8px;
+}
+
+.modal-content {
+  background: linear-gradient(145deg, #1a1a1a, #222);
+  border: 1px solid #2f2f2f;
+  padding: 1.5rem;
+  border-radius: 12px;
+  min-width: 340px;
+  max-width: 520px;
+  color: #eee;
+  box-shadow: 0 10px 40px #000a;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal h3 {
+  margin-top: 0;
+  color: #0af;
+  font-weight: 600;
+}
+
+.modal-list > div {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.modal input {
+  background: #181818;
+  border: 1px solid #333;
+  color: #eee;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.modal button[data-i] {
+  background: #f44;
+  color: white;
+  border: none;
+  padding: 0 6px;
+}
+.modal.closing {
+  animation: fadeOut 0.2s ease forwards;
+}
+
+.modal.closing .modal-content {
+  animation: slideOut 0.2s ease forwards;
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+@keyframes slideOut {
+  to {
+    transform: translateY(-60px);
+    opacity: 0;
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(180deg, #161616, #1c1c1c);
+  border-right: 1px solid #2a2a2a;
+  padding-top: 15px;
+
+  width: 70px; /* collapsed */
+  transition: width 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sidebar.expanded {
+  width: 240px;
+}
+
+/* Items */
+#sidebarSubjects {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 6px;
+}
+
+/* Sidebar items */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;     /* icon centered when collapsed */
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #ccc;
+  transition: justify-content 0.2s ease;
+}
+
+.sidebar-item:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.sidebar-item.active {
+  background: #0af2;
+  color: #0af;
+}
+
+/* Icon – fixed size */
+.sidebar-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Text – hidden when collapsed, appears when expanded */
+.sidebar-text {
+  display: none;                /* completely removed from layout when collapsed */
+  margin-left: 12px;            /* space between icon and text when expanded */
+  white-space: nowrap;
+}
+
+/* When sidebar is expanded, change layout */
+.sidebar.expanded .sidebar-item {
+  justify-content: flex-start;  /* icon moves to the left */
+}
+
+.sidebar.expanded .sidebar-text {
+  display: inline-block;        /* text becomes visible and takes space */
+}
+
+/* Layout shift */
+#appLayout {
+  margin-left: 70px;
+  transition: margin-left 0.3s ease;
+}
+
+#appLayout.expanded {
+  margin-left: 240px;
+}
+/* Non-selectable UI elements */
+header, .tab, th, .sidebar-item, .sidebar-icon, .sidebar-text, .modal
+.primary-button, .secondary-button, .edit-icon, #menuToggleItem {
+  user-select: none;
+}
+</style>
+</head>
+<body>
+<div id="sidebar" class="sidebar">
+  <div id="sidebarSubjects">
+    <div id="menuToggleItem" class="sidebar-item">
+      <div class="sidebar-icon">☰</div>
+      <div class="sidebar-text">Collapse</div>
+    </div>
+  </div>
+</div>
+<div id="appLayout">
+<header>Past Papers Tracker</header><div class="header-actions">
+  <button id="editHighlightBtn" class="secondary-button">Edit Highlights</button>
+  <button id="editColumnsBtn" class="secondary-button">Edit Columns</button>
+  <button id="editSubjectsBtn" class="secondary-button">Edit Subjects</button>
+  <button id="importBtn" class="secondary-button">Import JSON</button>
+  <button id="exportBtn" class="secondary-button">Export JSON</button>
+  <input type="file" id="importFile" accept=".json" hidden>
+</div>
+
+<div id="highlightModal" class="modal">
+  <div class="modal-content">
+    <h3>Score Highlight Rules</h3>
+
+    <div id="highlightList" class="modal-list"></div>
+
+    <button id="addHighlightRule" class="primary-button">+ Add Rule</button>
+
+    <div class="modal-actions">
+      <button id="closeHighlightModal" class="secondary-button">Cancel</button>
+      <button id="saveHighlightRules" class="primary-button">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="subjectsModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Subjects</h3>
+
+    <div id="subjectsList" class="modal-list"></div>
+
+    <div style="display:flex; gap:0.5rem; margin-top:1rem;">
+      <input type="text" id="newSubjectInput" placeholder="New subject" style="flex:1;">
+      <button id="addNewSubjectBtn" class="primary-button">Add</button>
+    </div>
+
+    <div class="modal-actions">
+      <button id="closeSubjectsModal" class="secondary-button">Cancel</button>
+      <button id="saveSubjectsBtn" class="primary-button">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="columnsModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Columns for <span id="columnsSubjectName"></span></h3>
+
+    <div id="columnsList" class="modal-list"></div>
+
+    <div class="modal-actions">
+      <button id="closeColumnsModal" class="secondary-button">Cancel</button>
+      <button id="saveColumnsBtn" class="primary-button">Save</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <form id="addPaperForm" class="add-form" autocomplete="off">
+    <input type="number" id="paperSequence" placeholder="Order (e.g. 1)" min="1" required />
+    <input type="text" id="paperYear" placeholder="Year (e.g. 2022J)" required />
+    <input type="text" id="paper1" placeholder="Paper 1 Score (e.g. 89/100)" />
+    <input type="text" id="paper2" placeholder="Paper 2 Score (e.g. 78/100)" />
+    <input type="text" id="paper3" placeholder="Paper 3 Score (e.g. 92/100)" style="display:none" />
+    <input type="text" id="gradeBoundary" placeholder="Grade Boundary for 9" min="0" step="1" />
+    <input type="text" id="paperNotes" placeholder="Notes (optional)" />
+    <button type="submit">Add Paper</button>
+  </form>
+  <div id="message" class="message"></div>
+
+  <table id="papersTable" aria-label="Past papers table">
+    <colgroup id="papersColgroup"></colgroup>
+    <thead>
+      <tr>
+        <th>Order</th>
+        <th>Year</th>
+        <th>Paper 1</th>
+        <th>Paper 2</th>
+        <th id="paper3Header" style="display:none">Paper 3</th>
+        <th>Total</th>
+        <th>Grade Boundary (9)</th>
+        <th>Average %</th>
+        <th>Notes</th>
+        <th>Edit</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+</main>
+<canvas id="bgCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;"></canvas>
+
+<script>
+// ---------- Background gradient ----------
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let width, height;
+function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+let gradientShift = 0;
+function draw() {
+  gradientShift += 0.5;
+  const gradient = ctx.createLinearGradient(0,0,width,height);
+  gradient.addColorStop(0, `hsl(${gradientShift%360},60%,15%)`);
+  gradient.addColorStop(1, `hsl(${(gradientShift+60)%360},60%,25%)`);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0,0,width,height);
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ---------- Subjects ----------
+let subjects = ['Biology', 'Chemistry', 'Physics', 'Maths', 'English Lit', 'English Lang', 'Computer Science', 'Geography'];
+let currentSubject = subjects[0];
+
+const dbName = 'PastPapersDB';
+const storeName = 'papers';
+const subjectsStoreName = 'subjects';
+
+// Single database connection function that creates both stores
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, 4); // Increment to version 4
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = e => {
+      const db = e.target.result;
+      
+      // Create papers store if it doesn't exist
+      if (!db.objectStoreNames.contains(storeName)) {
+        const paperStore = db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+        paperStore.createIndex('subject', 'subject', { unique: false });
+      } else {
+        // Migration for existing papers data
+        const tx = e.target.transaction;
+        const store = tx.objectStore(storeName);
+        store.getAll().onsuccess = function(event) {
+          const papers = event.target.result;
+          papers.forEach(paper => {
+            if (paper.dateAdded) delete paper.dateAdded;
+            
+            ['paper1', 'paper2', 'paper3'].forEach(p => {
+              if (paper[p] && !paper[`${p}Date`]) {
+                paper[`${p}Date`] = "Previously added before 31/07/25";
+              }
+            });
+            store.put(paper);
+          });
+        };
+      }
+      
+      // Create subjects store if it doesn't exist
+      if (!db.objectStoreNames.contains(subjectsStoreName)) {
+        db.createObjectStore(subjectsStoreName, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+  });
+}
+
+// Get subjects from database
+async function getSubjects() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(subjectsStoreName, 'readonly');
+    const store = tx.objectStore(subjectsStoreName);
+    const request = store.getAll();
+    
+    request.onsuccess = () => {
+      resolve(request.result.map(item => item.name));
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveSubjects(subjectArray) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(subjectsStoreName, 'readwrite');
+    const store = tx.objectStore(subjectsStoreName);
+    
+    // Clear existing subjects
+    const clearRequest = store.clear();
+    
+    clearRequest.onsuccess = () => {
+      // Add all new subjects
+      subjectArray.forEach(subj => {
+        store.add({ name: subj });
+      });
+    };
+    
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function loadSubjects() {
+  try {
+    const dbSubjects = await getSubjects();
+    if (dbSubjects && dbSubjects.length > 0) {
+      subjects = dbSubjects;
+    }
+    currentSubject = subjects[0] || '';
+    renderTabs();
+    updatePaper3Visibility();
+    loadAndRenderTable();
+  } catch (error) {
+    console.error('Error loading subjects:', error);
+    // Fallback to default subjects
+    renderTabs();
+    updatePaper3Visibility();
+    loadAndRenderTable();
+  }
+}
+
+function closeModal(modal) {
+  modal.classList.add('closing');
+  setTimeout(() => {
+    modal.classList.remove('closing');
+    modal.style.display = 'none';
+  }, 200);
+}
+
+// ---------- Subjects Modal ----------
+document.getElementById('editSubjectsBtn').onclick = ()=>{
+  document.getElementById('subjectsModal').style.display='flex';
+  renderSubjectsModal();
+};
+document.getElementById('closeSubjectsModal').onclick = ()=>{
+  closeModal(subjectsModal); // <-- changed
+};
+document.getElementById('addNewSubjectBtn').onclick = ()=>{
+  const val = document.getElementById('newSubjectInput').value.trim();
+  if(val){ subjects.push(val); document.getElementById('newSubjectInput').value=''; renderSubjectsModal(); }
+};
+document.getElementById('saveSubjectsBtn').onclick = async ()=>{
+  document.querySelectorAll('#subjectsList input').forEach(input=>{
+    subjects[parseInt(input.dataset.index)] = input.value.trim();
+  });
+  await saveSubjects(subjects);
+  closeModal(subjectsModal); // <-- changed
+  renderTabs();
+  updatePaper3Visibility();
+  loadAndRenderTable();
+};
+
+// ---------- Render subjects modal ----------
+function renderSubjectsModal(){
+  const container=document.getElementById('subjectsList');
+  container.innerHTML='';
+  subjects.forEach((subj,i)=>{
+    const div=document.createElement('div');
+    div.style.display='flex'; div.style.alignItems='center'; div.style.gap='0.5rem'; div.style.marginBottom='0.4rem';
+    const input=document.createElement('input');
+    input.type='text'; input.value=subj; input.style.flex='1';
+    input.style.background='#222'; input.style.color='#eee'; input.style.border='none'; input.style.borderRadius='4px';
+    input.dataset.index=i;
+    const delBtn=document.createElement('button');
+    delBtn.textContent='✕'; delBtn.style.background='#f44'; delBtn.style.color='#fff'; delBtn.style.border='none';
+    delBtn.style.borderRadius='4px'; delBtn.style.cursor='pointer'; delBtn.dataset.index=i;
+    delBtn.onclick=()=>{ subjects.splice(i,1); renderSubjectsModal(); };
+    div.appendChild(input); div.appendChild(delBtn);
+    container.appendChild(div);
+  });
+}
+
+
+// ---------- Columns Modal ----------
+const editColumnsBtn = document.getElementById('editColumnsBtn');
+const columnsModal = document.getElementById('columnsModal');
+const closeColumnsModal = document.getElementById('closeColumnsModal');
+const saveColumnsBtn = document.getElementById('saveColumnsBtn');
+const columnsList = document.getElementById('columnsList');
+const columnsSubjectName = document.getElementById('columnsSubjectName');
+
+let currentColumns = []; // Holds the live column array for the modal
+
+editColumnsBtn.onclick = async () => {
+  columnsModal.style.display = 'flex';
+  columnsSubjectName.textContent = currentSubject;
+  const cols = await getColumns(currentSubject);
+  currentColumns = [...cols];
+  renderColumnsModal();
+};
+
+closeColumnsModal.onclick = () => {
+  closeModal(columnsModal); // <-- changed
+};
+
+saveColumnsBtn.onclick = async () => {
+  // Read values from inputs
+  const newCols = [...columnsList.querySelectorAll('input')]
+    .map(input => input.value.trim())
+    .filter(v => v); // remove empty
+  currentColumns = newCols;
+  await saveColumns(currentSubject, currentColumns);
+  closeModal(columnsModal); // <-- changed
+  loadAndRenderTable();
+};
+
+// ---------- Render columns modal dynamically ----------
+function renderColumnsModal() {
+  columnsList.innerHTML = '';
+  currentColumns.forEach((col, i) => {
+    const div = document.createElement('div');
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.gap = '0.5rem';
+    div.classList.add('modal-row');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = col;
+    input.dataset.index = i;
+    input.style.flex = '1';
+    input.style.background = '#222';
+    input.style.color = '#eee';
+    input.style.border = 'none';
+    input.style.borderRadius = '4px';
+    input.oninput = (e) => currentColumns[i] = e.target.value;
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.style.background = '#f44';
+    delBtn.style.color = '#fff';
+    delBtn.style.border = 'none';
+    delBtn.style.borderRadius = '4px';
+    delBtn.style.cursor = 'pointer';
+    delBtn.onclick = () => {
+      currentColumns.splice(i, 1);
+      renderColumnsModal();
+    };
+
+    div.appendChild(input);
+    div.appendChild(delBtn);
+    columnsList.appendChild(div);
+  });
+
+  // Add button
+  const addBtn = document.createElement('button');
+  addBtn.textContent = '+ Add Column';
+  addBtn.style.background = '#0af';
+  addBtn.style.color = '#121212';
+  addBtn.style.border = 'none';
+  addBtn.style.borderRadius = '4px';
+  addBtn.style.padding = '0.4rem 0.8rem';
+  addBtn.style.cursor = 'pointer';
+  addBtn.onclick = () => {
+    currentColumns.push('NewColumn');
+    renderColumnsModal();
+  };
+  columnsList.appendChild(addBtn);
+}
+
+// ---------- Save / Load columns for current subject ----------
+async function getColumns(subject) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(subjectsStoreName,'readonly');
+    const store = tx.objectStore(subjectsStoreName);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const subjObj = req.result.find(s=>s.name===subject);
+      resolve(subjObj?.columns || [...columnsDefault]);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveColumns(subject, columnArray) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(subjectsStoreName,'readwrite');
+    const store = tx.objectStore(subjectsStoreName);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const subjObj = req.result.find(s=>s.name===subject);
+      if(subjObj){
+        subjObj.columns = columnArray;
+        store.put(subjObj);
+      } else {
+        store.add({name: subject, columns: columnArray});
+      }
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// ---------- Highlight Rules ----------
+let highlightRules = [
+  { label: "CRITICALLY LOW", min: 0, max: 50, color: "255,0,0", alpha: 0.2 },
+  { label: "Good", min: 70, max: 80, color: "255,255,0", alpha: 0.2 },
+  { label: "AMAZING", min: 90, max: 100, color: "0,255,0", alpha: 0.25 }
+];
+
+const highlightModal = document.getElementById('highlightModal');
+const highlightList = document.getElementById('highlightList');
+
+document.getElementById('editHighlightBtn').onclick = () => {
+  highlightModal.style.display = 'flex';
+  renderHighlightRules();
+};
+
+document.getElementById('closeHighlightModal').onclick = () => {
+  closeModal(highlightModal); // <-- changed
+};
+
+document.getElementById('addHighlightRule').onclick = () => {
+  highlightRules.push({ label: "New", min: 0, max: 100, color: "0,200,255", alpha: 0.2 });
+  renderHighlightRules();
+};
+
+document.getElementById('saveHighlightRules').onclick = () => {
+  closeModal(highlightModal); // <-- changed
+  loadAndRenderTable();
+};
+
+// ---------- Render rules UI ----------
+function renderHighlightRules() {
+  highlightList.innerHTML = '';
+
+  highlightRules.forEach((rule, i) => {
+    const div = document.createElement('div');
+    div.style.display = 'flex';
+    div.style.gap = '6px';
+    div.style.marginBottom = '6px';
+
+    div.innerHTML = `
+      <input value="${rule.label}" data-i="${i}" data-k="label" style="flex:1;">
+      <input type="number" value="${rule.min}" data-i="${i}" data-k="min" style="width:60px;">
+      <span>% -</span>
+      <input type="number" value="${rule.max}" data-i="${i}" data-k="max" style="width:60px;">
+      <input type="color" value="${rgbToHex(rule.color)}" data-i="${i}" data-k="color">
+      <input type="number" step="0.05" min="0" max="1" value="${rule.alpha}" data-i="${i}" data-k="alpha" style="width:60px;">
+      <button data-i="${i}">✕</button>
+    `;
+
+    div.querySelectorAll('input').forEach(inp => {
+      inp.oninput = e => {
+        const idx = inp.dataset.i;
+        const key = inp.dataset.k;
+        if (key === "color") {
+          highlightRules[idx].color = hexToRgb(inp.value);
+        } else {
+          highlightRules[idx][key] = key === "label" ? inp.value : parseFloat(inp.value);
+        }
+      };
+    });
+
+    div.querySelector('button').onclick = () => {
+      highlightRules.splice(i, 1);
+      renderHighlightRules();
+    };
+
+    highlightList.appendChild(div);
+  });
+}
+
+// ---------- Apply highlighting ----------
+function getHighlightStyle(percent) {
+  if (percent == null) return null;
+
+  for (const rule of highlightRules) {
+    if (percent >= rule.min && percent <= rule.max) {
+      return `background: rgba(${rule.color}, ${rule.alpha});`;
+    }
+  }
+  return null;
+}
+
+// Inject into table rendering
+function applyHighlight(td, percent) {
+  const style = getHighlightStyle(percent);
+  if (style) td.style = style;
+}
+
+// ---------- Helpers ----------
+function rgbToHex(rgb) {
+  const [r,g,b] = rgb.split(',').map(Number);
+  return "#" + [r,g,b].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+function hexToRgb(hex) {
+  const bigint = parseInt(hex.slice(1), 16);
+  return `${(bigint>>16)&255},${(bigint>>8)&255},${bigint&255}`;
+}
+
+// ---------- Tabs rendering ----------
+const sidebar = document.getElementById('sidebar');
+const sidebarSubjects = document.getElementById('sidebarSubjects');
+
+const subjectIcons = {
+  biology: "🧬",
+  chemistry: "⚗️",
+  physics: "⚡",
+  maths: "📐",
+  "english lit": "📖",
+  "english lang": "✍️",
+  "computer science": "💻",
+  geography: "🌍"
+};
+
+function getSubjectIcon(name) {
+  const key = name.toLowerCase();
+  return subjectIcons[key] || "📘"; // fallback
+}
+
+function renderTabs() {
+  const toggle = document.getElementById('menuToggleItem'); // save it
+
+  sidebarSubjects.innerHTML = '';
+  sidebarSubjects.appendChild(toggle); // put it back FIRST
+
+  subjects.forEach(subj => {
+    const item = document.createElement('div');
+    item.className = 'sidebar-item ' + (subj === currentSubject ? 'active' : '');
+
+    const icon = document.createElement('div');
+    icon.className = 'sidebar-icon';
+    icon.textContent = getSubjectIcon(subj);
+
+    const text = document.createElement('div');
+    text.className = 'sidebar-text';
+    text.textContent = subj;
+
+    item.appendChild(icon);
+    item.appendChild(text);
+
+    item.onclick = () => {
+      currentSubject = subj;
+      updatePaper3Visibility();
+      renderTabs();
+      loadAndRenderTable();
+    };
+
+    sidebarSubjects.appendChild(item);
+  });
+}
+// ---------- Paper 3 visibility ----------
+function updatePaper3Visibility(){
+  const paper3Input = document.getElementById('paper3');
+  const paper3Header = document.getElementById('paper3Header');
+
+  if (!paper3Input || !paper3Header) return; //  prevents crash
+
+  if(currentSubject==='Maths'||currentSubject==='Geography'){
+    paper3Input.style.display='inline-block';
+    paper3Header.style.display='';
+  } else {
+    paper3Input.style.display='none';
+    paper3Header.style.display='none';
+    paper3Input.value='';
+  }
+}
+// ---------- Papers functions ----------
+async function getPapersBySubject(subject) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const index = store.index('subject');
+    const request = index.getAll(subject);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function addPaper(paper) {
+  const db = await openDB();
+  const tx = db.transaction(storeName, 'readwrite');
+  const store = tx.objectStore(storeName);
+  await store.add(paper);
+  return tx.complete;
+}
+
+function updateMarkDates(originalPaper, updatedPaper) {
+  const dates = {};
+  ['paper1', 'paper2', 'paper3'].forEach(paper => {
+    if (updatedPaper[paper] && updatedPaper[paper] !== originalPaper[paper]) {
+      dates[`${paper}Date`] = new Date().toLocaleDateString('en-GB');
+    }
+  });
+  return { ...updatedPaper, ...dates };
+}
+
+async function updatePaper(paperId, updatedData) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    
+    const getRequest = store.get(paperId);
+    
+    getRequest.onsuccess = () => {
+      const currentPaper = getRequest.result;
+      const paperWithDates = {...currentPaper, ...updatedData};
+      
+      ['paper1', 'paper2', 'paper3'].forEach(p => {
+        if (updatedData[p] !== undefined && updatedData[p] !== currentPaper[p]) {
+          paperWithDates[`${p}Date`] = new Date().toLocaleDateString('en-GB');
+        }
+      });
+      console.log('Updating paper:', {
+        id: paperId,
+        current: currentPaper,
+        updates: updatedData,
+        final: paperWithDates
+      });
+      store.put(paperWithDates);
+      resolve();
+    };
+    
+    getRequest.onerror = () => reject(getRequest.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+const tableBody = document.querySelector('#papersTable tbody');
+const addForm = document.getElementById('addPaperForm');
+const messageEl = document.getElementById('message');
+
+function clearMessage() {
+  messageEl.textContent = '';
+}
+
+function createEditButton() {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.classList.add('edit-icon');
+  svg.innerHTML = `<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 000-1.42l-2.34-2.34a1.003 1.003 0 00-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/>`;
+  return svg;
+}
+
+function toggleEdit(row, paper) {
+  const editing = row.classList.toggle('editing');
+
+  if (editing) {
+    // Turn each cell into input
+    for (const td of row.querySelectorAll('td.editable')) {
+      const key = td.dataset.key;
+      const input = document.createElement('input');
+      input.type = (key === 'gradeBoundary' || key === 'sequence') ? 'number' : 'text';
+      input.value = key === 'notes' ? (paper.notes || '') : td.textContent.trim();
+      input.min = key === 'sequence' ? '1' : '0';
+      input.step = 'any';
+      td.textContent = '';
+      td.appendChild(input);
+    }
+  } else {
+    const updatedData = {};
+    const cells = row.querySelectorAll('td.editable');
+
+    cells.forEach(td => {
+      const key = td.dataset.key;
+      const input = td.querySelector('input');
+      if (!input) return;
+
+      let val = input.value.trim();
+      if (key === 'sequence' || key === 'gradeBoundary') {
+        val = val === '' ? null : parseFloat(val);
+      }
+      updatedData[key] = val;
+
+      // Notes icon rendering
+      if (key === 'notes') {
+        const icon = document.createElement('span');
+        icon.textContent = 'ℹ️';
+        icon.title = val || '';
+        icon.style.cursor = 'help';
+        td.textContent = '';
+        td.appendChild(icon);
+      } else {
+        td.textContent = val !== null && val !== undefined ? val : '';
+      }
+    });
+
+    // --- CALCULATE total & average from paper scores ---
+    function parseScore(str) {
+      if (!str || !str.includes('/')) return null;
+      const [num, den] = str.split('/').map(s => parseFloat(s.trim()));
+      if (isNaN(num) || isNaN(den) || den === 0) return null;
+      return { num, den };
+    }
+
+    function calculateTotals(p1, p2, p3) {
+      let totalNum = 0;
+      let totalDen = 0;
+      [p1, p2, p3].forEach(p => {
+        const parsed = parseScore(p);
+        if (parsed) {
+          totalNum += parsed.num;
+          totalDen += parsed.den;
+        }
+      });
+      if (totalDen === 0) return { total: '', avg: '' };
+      const percent = (totalNum / totalDen) * 100;
+      return {
+        total: `${totalNum}/${totalDen}`,
+        avg: `${Number(percent.toPrecision(3)).toFixed(1)}%`
+      };
+    }
+
+    const { total, avg } = calculateTotals(
+      updatedData.paper1 ?? paper.paper1,
+      updatedData.paper2 ?? paper.paper2,
+      updatedData.paper3 ?? paper.paper3
+    );
+
+    // PROGRAM AUTHORITY: override any manual total/average
+    updatedData.total = total;
+    updatedData.averagePercent = avg;
+
+    // Update DB
+    updatePaper(paper.id, updatedData).then(() => {
+      loadAndRenderTable();
+    }).catch(err => {
+      console.error('Update failed:', err);
+    });
+  }
+}
+
+// --------- Column settings per subject ---------
+const columnsDefault = ['sequence','year','paper1','paper2','paper3','total','gradeBoundary','averagePercent','notes','edit'];
+let columnsSettings = {}; // {subjectName: [array of visible columns]}
+
+
+function isPaper3Enabled() { // one day fix so p3 is dynamic to more than one subject
+  return currentSubject === 'Maths' || currentSubject === 'Geography';
+}
+
+function formatColumnLabel(key) {
+  const labels = {
+    sequence: 'Order',
+    year: 'Year',
+    paper1: 'Paper 1',
+    paper2: 'Paper 2',
+    paper3: 'Paper 3',
+    total: 'Total',
+    gradeBoundary: 'Grade Boundary (9)',
+    averagePercent: 'Average %',
+    notes: 'Notes',
+    edit: 'Edit'
+  };
+
+  return labels[key] || key; // custom columns show their saved name
+}
+
+function renderTableHeader(visibleColumns) {
+  const headRow = document.querySelector('#papersTable thead tr');
+  headRow.innerHTML = '';
+
+  visibleColumns.forEach(key => {
+    if (key === 'paper3' && !isPaper3Enabled()) return;
+
+    const th = document.createElement('th');
+    th.textContent = formatColumnLabel(key);
+    if (key === 'paper3' && !isPaper3Enabled()) th.style.display = 'none';
+    headRow.appendChild(th);
+  });
+}
+
+function createNotesCell(paper) {
+  const td = document.createElement('td');
+  td.classList.add('editable');
+  td.dataset.key = 'notes';
+
+  const noteIcon = document.createElement('span');
+  noteIcon.textContent = 'ℹ️';
+  noteIcon.title = paper.notes || '';
+  noteIcon.style.cursor = 'help';
+
+  td.appendChild(noteIcon);
+  return td;
+}
+
+async function loadAndRenderTable() {
+  try {
+    const papers = await getPapersBySubject(currentSubject);
+    let visibleColumns = await getColumns(currentSubject);
+
+    // paper3 only exists for these subjects
+    visibleColumns = visibleColumns.filter(key => key !== 'paper3' || isPaper3Enabled());
+
+    papers.sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+    tableBody.innerHTML = '';
+    renderTableHeader(visibleColumns);
+
+    papers.forEach(paper => {
+      const tr = document.createElement('tr');
+
+      visibleColumns.forEach(key => {
+        if (key === 'edit') {
+          const editTd = document.createElement('td');
+          const editBtn = createEditButton();
+          editBtn.addEventListener('click', () => toggleEdit(tr, paper));
+          editTd.appendChild(editBtn);
+          tr.appendChild(editTd);
+          return;
+        }
+
+        if (key === 'notes') {
+          tr.appendChild(createNotesCell(paper));
+          return;
+        }
+
+        const td = document.createElement('td');
+        td.classList.add('editable');
+        td.dataset.key = key;
+        td.textContent = paper[key] !== undefined && paper[key] !== null ? paper[key] : '';
+
+        if (key === 'averagePercent') {
+          const num = parseFloat(td.textContent);
+          if (!isNaN(num)) applyHighlight(td, num);
+        }
+
+        if (['paper1', 'paper2', 'paper3'].includes(key) && paper[`${key}Date`]) {
+          td.title = `Marked on: ${paper[`${key}Date`]}`;
+        }
+
+        tr.appendChild(td);
+      });
+
+      tableBody.appendChild(tr);
+    });
+
+    autoSizeColumns();
+    recalcPrecalculatedColumns(); // <- recalculates totals and averages
+  } catch (err) {
+    console.error(err);
+    messageEl.textContent = 'Error loading papers.';
+  }
+}
+
+function recalcPrecalculatedColumns() {
+  const tbody = document.querySelector('#papersTable tbody');
+  tbody.querySelectorAll('tr').forEach(row => {
+    // Parse score from fraction format
+    function parseScoreFromCell(key) {
+      const td = row.querySelector(`td[data-key="${key}"]`);
+      if (!td) return null;
+      
+      // If td has input (from editing), use input.value
+      const input = td.querySelector('input');
+      let val = input ? input.value : td.textContent;
+      
+      if (!val) return null;
+      
+      // Parse format like "89/100"
+      const match = val.match(/(\d+)\s*\/\s*(\d+)/);
+      if (match) {
+        return {
+          num: parseInt(match[1], 10),
+          den: parseInt(match[2], 10)
+        };
+      }
+      return null;
+    }
+    
+    const paper1 = parseScoreFromCell('paper1');
+    const paper2 = parseScoreFromCell('paper2');
+    const paper3 = parseScoreFromCell('paper3');
+    
+    let totalNum = 0;
+    let totalDen = 0;
+    
+    if (paper1) {
+      totalNum += paper1.num;
+      totalDen += paper1.den;
+    }
+    if (paper2) {
+      totalNum += paper2.num;
+      totalDen += paper2.den;
+    }
+    if (paper3 && isPaper3Enabled()) {
+      totalNum += paper3.num;
+      totalDen += paper3.den;
+    }
+    
+    const totalCell = row.querySelector('td[data-key="total"]');
+    const avgCell = row.querySelector('td[data-key="averagePercent"]');
+    
+    if (totalDen > 0) {
+      if (totalCell) totalCell.textContent = `${totalNum}/${totalDen}`;
+      const percent = (totalNum / totalDen) * 100;
+      if (avgCell) avgCell.textContent = `${Math.round(percent)}%`;
+    } else {
+      if (totalCell) totalCell.textContent = '';
+      if (avgCell) avgCell.textContent = '';
+    }
+  });
+}
+
+// Optional: trigger recalc on input change
+document.querySelector('#papersTable tbody').addEventListener('input', recalcPrecalculatedColumns);
+
+function autoSizeColumns() {
+  const table = document.getElementById('papersTable');
+  const colgroup = document.getElementById('papersColgroup');
+
+  const headers = [...table.querySelectorAll('thead th')];
+  const rows = [...table.querySelectorAll('tbody tr')];
+
+  const isNumericLike = text => /^[\d\s./%()-]+$/.test(text.trim());
+
+  const cols = headers.map(th => ({
+    weight: th.textContent.includes('Notes') ? 2.8 : th.textContent.includes('Edit') ? 0.4 : 1,
+    maxLen: th.textContent.trim().length
+  }));
+
+  rows.forEach(row => {
+    [...row.children].forEach((td, i) => {
+      const text = td.textContent.trim();
+      cols[i].maxLen = Math.max(cols[i].maxLen, text.length);
+
+      if (isNumericLike(text)) cols[i].weight = Math.max(cols[i].weight, 0.8);
+      else cols[i].weight = Math.max(cols[i].weight, 1.2);
+
+      const headerText = headers[i]?.textContent || '';
+      if (headerText.includes('Notes')) cols[i].weight = 2.8;
+      if (headerText.includes('Edit')) cols[i].weight = 0.4;
+    });
+  });
+
+  const totalWeight = cols.reduce((sum, c) => sum + c.weight, 0);
+
+  colgroup.innerHTML = '';
+  cols.forEach(col => {
+    const el = document.createElement('col');
+    el.style.width = `${(col.weight / totalWeight) * 100}%`;
+    colgroup.appendChild(el);
+  });
+}
+function parseScore(str) {
+  if (!str || !str.includes('/')) return null;
+  const [num, den] = str.split('/').map(s => parseFloat(s.trim()));
+  if (isNaN(num) || isNaN(den) || den === 0) return null;
+  return { num, den };
+}
+
+function calculateTotals(p1, p2, p3) {
+  let totalNum = 0;
+  let totalDen = 0;
+
+  [p1, p2, p3].forEach(p => {
+    const parsed = parseScore(p);
+    if (parsed) {
+      totalNum += parsed.num;
+      totalDen += parsed.den;
+    }
+  });
+
+  if (totalDen === 0) return { total: '', avg: '' };
+
+  const percent = (totalNum / totalDen) * 100;
+
+  return {
+    total: `${totalNum}/${totalDen}`,
+    avg: `${Number(percent.toPrecision(3)).toFixed(1)}%`
+  };
+}
+
+addForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  clearMessage();
+
+  const sequence = parseInt(document.getElementById('paperSequence').value.trim());
+  const year = document.getElementById('paperYear').value.trim();
+  const paper1 = document.getElementById('paper1').value.trim();
+  const paper2 = document.getElementById('paper2').value.trim();
+  const paper3Input = document.getElementById('paper3');
+  const paper3 = (currentSubject === 'Maths' || currentSubject === 'Geography') ? paper3Input.value.trim() : undefined;
+  const gradeBoundary = parseFloat(document.getElementById('gradeBoundary').value.trim());
+  const notes = document.getElementById('paperNotes').value.trim();
+  const { total, avg } = calculateTotals(paper1, paper2, paper3);
+
+  if (!sequence || !year) {
+    messageEl.textContent = 'Order and Year are required.';
+    return;
+  }
+
+  const newPaper = {
+    subject: currentSubject,
+    sequence,
+    year,
+    paper1,
+    paper2,
+    total, // program controlled
+    gradeBoundary: isNaN(gradeBoundary) ? null : gradeBoundary,
+    notes,
+    averagePercent: avg // program controlled
+  };
+
+  if (paper1) newPaper.paper1Date = new Date().toLocaleDateString('en-GB');
+  if (paper2) newPaper.paper2Date = new Date().toLocaleDateString('en-GB');
+  if (paper3) newPaper.paper3Date = new Date().toLocaleDateString('en-GB');
+
+  if (paper3 !== undefined) newPaper.paper3 = paper3;
+
+  try {
+    await addPaper(newPaper);
+    messageEl.textContent = 'Paper added successfully.';
+    addForm.reset();
+    updatePaper3Visibility();
+    loadAndRenderTable();
+  } catch (error) {
+    console.error('Error adding paper:', error);
+    messageEl.textContent = 'Error adding paper. Please try again.';
+  }
+});
+
+// ---------- Import/Export JSON handlers ----------
+async function exportAllData() {
+  try {
+    const db = await openDB();
+
+    // Get all papers
+    const papers = await new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readonly');
+      const store = tx.objectStore(storeName);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    // Get all subjects data (includes columns configuration)
+    const subjectData = await new Promise((resolve, reject) => {
+      const tx = db.transaction(subjectsStoreName, 'readonly');
+      const store = tx.objectStore(subjectsStoreName);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    // Create complete export object
+    const fullExport = {
+      papers: papers,
+      subjects: subjectData,
+      exportDate: new Date().toISOString(),
+      version: "1.0"
+    };
+
+    // Create and trigger download
+    const dataStr = JSON.stringify(fullExport, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'past_papers_full_backup.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    
+    messageEl.textContent = 'Full backup exported successfully!';
+  } catch (error) {
+    console.error('Export failed:', error);
+    messageEl.textContent = 'Export failed. Please try again.';
+  }
+}
+document.getElementById('exportBtn').addEventListener('click', exportAllData);
+document.getElementById('importBtn').onclick = () => {
+  document.getElementById('importFile').click();
+};
+
+function recalcPaper(entry) {
+  const { total, avg } = calculateTotals(entry.paper1, entry.paper2, entry.paper3);
+  entry.total = total;
+  entry.averagePercent = avg;
+  return entry;
+}
+
+
+document.getElementById('importFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    
+    // IMPORT FULL STRUCTURE SUPPORT - handles old + new formats
+    let data = parsed.papers || parsed; // supports old format (array) + new format (object with papers)
+    let importedSubjects = parsed.subjects || null;
+    
+    if (!Array.isArray(data)) throw new Error('Invalid JSON format: expected papers array');
+    
+    // SUBJECT AUTO-DETECTION (fallback for old format imports)
+    let detectedSubjects = new Set();
+    
+    for (let entry of data) {
+      if (entry.subject) detectedSubjects.add(entry.subject);
+    }
+    
+    const db = await openDB();
+    
+    // Import papers
+    const papersTx = db.transaction(storeName, 'readwrite');
+    const papersStore = papersTx.objectStore(storeName);
+    
+    for (let entry of data) {
+      entry = recalcPaper(entry); // FORCE overwrite totals and averages
+      
+      ['paper1','paper2','paper3'].forEach(p => {
+        if (entry[p] && !entry[`${p}Date`]) {
+          entry[`${p}Date`] = new Date().toLocaleDateString('en-GB');
+        }
+      });
+      
+      await papersStore.put(entry);
+    }
+    
+    await papersTx.complete;
+    
+    // Handle subjects import
+    if (importedSubjects && Array.isArray(importedSubjects) && importedSubjects.length > 0) {
+      // New format: import full subject data (with column configurations)
+      const subjectsTx = db.transaction(subjectsStoreName, 'readwrite');
+      const subjectsStore = subjectsTx.objectStore(subjectsStoreName);
+      
+      // Clear existing subjects
+      await subjectsStore.clear();
+      
+      // Import all subject data
+      for (let subject of importedSubjects) {
+        await subjectsStore.put(subject);
+      }
+      
+      await subjectsTx.complete;
+      
+      // Update in-memory subjects array
+      subjects = importedSubjects.map(s => s.name);
+      messageEl.textContent = `Full import successful! Imported ${data.length} papers and ${importedSubjects.length} subjects with column configurations.`;
+      
+    } else if (detectedSubjects.size > 0) {
+      // Fallback: old format import - auto-detect subjects from papers
+      subjects = [...new Set([...subjects, ...detectedSubjects])];
+      await saveSubjects(subjects);
+      messageEl.textContent = `Import successful. Added ${detectedSubjects.size} new subject(s) from papers.`;
+      
+    } else {
+      // No subjects detected
+      messageEl.textContent = `Import successful. Imported ${data.length} papers.`;
+    }
+    
+    // Refresh UI
+    renderTabs();
+    updatePaper3Visibility();
+    loadAndRenderTable();
+    
+  } catch (err) {
+    console.error('Import failed:', err);
+    messageEl.textContent = 'Failed to import JSON: ' + err.message;
+  }
+});
+
+const appLayout = document.getElementById('appLayout');
+
+document.getElementById('menuToggleItem').onclick = () => {
+  const expanded = sidebar.classList.toggle('expanded');
+  appLayout.classList.toggle('expanded', expanded);
+
+  // optional: change label
+  document.querySelector('#menuToggleItem .sidebar-text').textContent = expanded ? 'Collapse' : '';
+};
+
+// Initial render
+renderTabs();
+updatePaper3Visibility();
+loadAndRenderTable();
+
+// Load subjects at startup
+loadSubjects();
+</script>
+</body>
+</html>

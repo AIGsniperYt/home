@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foraging Simulation</title>
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #canvas-container {
+            flex: 2;
+            border-right: 2px solid #ddd;
+        }
+        #stats-container {
+            flex: 1;
+            padding: 20px;
+        }
+        #stats-container h1 {
+            margin-top: 0;
+        }
+        canvas {
+            display: block;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="canvas" width="1200" height="900"></canvas>
+    </div>
+    <div id="stats-container">
+        <h1>Simulation Stats</h1>
+        <p><strong>FPS:</strong> <span id="fps">0</span></p>
+        <p><strong>Number of Ants:</strong> <span id="numAnts">0</span></p>
+        <p><strong>Number of Food Items:</strong> <span id="foodCount">0</span></p>
+        <p><strong>Tip:</strong> Right-click on the canvas to place a cluster of food!</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

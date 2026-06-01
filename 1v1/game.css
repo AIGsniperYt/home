@@ -1,0 +1,151 @@
+body {
+    background-color: #333;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.player {
+    width: 100px;
+    height: 100px;
+    position: absolute;
+}
+#player1 {
+    left: 0;
+    background-color: red;
+}
+#player2 {
+    right: 0;
+    background-color: blue;
+}
+
+.bullet {
+    background-color: yellow;
+    width: 50px;
+    height: 10px;
+    position: absolute;
+    border-radius: 10%;
+    display: none;
+}
+
+/*             Health                 */ 
+
+.healthBar {
+    position: absolute;
+    width: 200px; /* Adjust the width of the health bar as needed */
+    height: 20px; /* Adjust the height of the health bar as needed */
+    background-color: transparent;
+    border: 5px solid white; /* Thick white border */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.healthText {
+    color: white;
+    font-weight: bold;
+    margin-top: auto; 
+    z-index: 2;
+}
+
+/* Health */
+.health {
+    height: 100%;
+    background-color: green;
+    flex-shrink: 0; /* Prevent the health portion from shrinking */
+    position: absolute;
+    left: 0;
+    transition: width 0.5s ease; /* Smooth transition for the width property */
+}
+
+
+/* Green Health Portion for Player 1 */
+#health1 {
+    height: 20px; /* Adjust the height to match the border */
+    width: 200px;  /* Adjust the width to match the border */
+    background-color: green;
+    display: block;
+    z-index: 1;
+}
+
+/* Green Health Portion for Player 2 */
+#health2 {
+    height: 20px; /* Adjust the height to match the border */
+    width: 200px;  /* Adjust the width to match the border */
+    background-color: green;
+    display: block;
+    z-index: 0;
+}
+
+/* Menu Modal Styles */
+.modal {
+    display: block;
+    position: fixed;
+    top: 150%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    width: 400px;
+    height: 600px;
+    border-radius: 10px;
+    text-align: center;
+    transition: transform 2s ease-in-out;
+    z-index: 10;
+  }
+  
+  .modal-content {
+    color: white;
+  }
+  
+  #playButton {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  #playButton:hover {
+    background-color: #45a049;
+  }
+  
+/* Countdown Display Styles */
+.countdown {
+    display: none;
+    font-size: 100px;
+    font-weight: bold;
+    margin-top: 10px;
+    color: white;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  #winnerModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #000;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#winnerText {
+    margin-bottom: 20px;
+}
+
+#playAgainButton {
+    padding: 10px 20px;
+    background-color: #4caf50;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+

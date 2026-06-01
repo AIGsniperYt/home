@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    #movingElement {
+      width: 100px;
+      height: 100px;
+      background-color: blue;
+      position: absolute;
+    }
+  </style>
+</head>
+<body>
+  <div id="movingElement"></div>
+
+  <script>
+    const movingElement = document.getElementById('movingElement');
+    let position = 0;
+
+    function moveRight() {
+      position += 1;
+      movingElement.style.left = position + 'px';
+
+      requestAnimationFrame(moveRight);
+    }
+
+    moveRight();
+  </script>
+</body>
+</html>

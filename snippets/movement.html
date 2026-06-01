@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Movement</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Character Movement Script</h1>
+        <button id="copyButton" onclick="copyCodeToClipboard()">Copy Code</button>
+    </header>
+
+    <pre>
+        <code>
+            const player = document.getElementById("player");
+
+            let x = 0;
+            let y = 0;
+
+            let isUpPressed = false;
+            let isDownPressed = false;
+            let isLeftPressed = false;
+            let isRightPressed = false;
+
+            function updatePosition() {
+                player.style.left = x + "px";
+                player.style.top = y + "px";
+            }
+
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "ArrowUp" || event.key === "W" || event.key === "w") {
+                    isUpPressed = true;
+                }
+                if (event.key === "ArrowDown" || event.key === "S" || event.key === "s") {
+                    isDownPressed = true;
+                }
+                if (event.key === "ArrowLeft" || event.key === "A" || event.key === "a") {
+                    isLeftPressed = true;
+                }
+                if (event.key === "ArrowRight" || event.key === "D" || event.key === "d") {
+                    isRightPressed = true;
+                }
+            });
+
+            document.addEventListener("keyup", (event) => {
+                if (event.key === "ArrowUp" || event.key === "W" || event.key === "w") {
+                    isUpPressed = false;
+                }
+                if (event.key === "ArrowDown" || event.key === "S" || event.key === "s") {
+                    isDownPressed = false;
+                }
+                if (event.key === "ArrowLeft" || event.key === "A" || event.key === "a") {
+                    isLeftPressed = false;
+                }
+                if (event.key === "ArrowRight" || event.key === "D" || event.key === "d") {
+                    isRightPressed = false;
+                }
+            });
+
+            function movePlayer() {
+                const speed = 4;
+
+                if (isUpPressed) {
+                    y -= speed;
+                }
+                if (isDownPressed) {
+                    y += speed;
+                }
+                if (isLeftPressed) {
+                    x -= speed;
+                }
+                if (isRightPressed) {
+                    x += speed;
+                }
+
+                updatePosition();
+
+                requestAnimationFrame(movePlayer);
+            }
+
+            movePlayer();
+        </code>
+    </pre>
+
+    <script>
+        function copyCodeToClipboard() {
+            const scriptCode = document.querySelector("pre code");
+            const textarea = document.createElement("textarea");
+            textarea.value = scriptCode.textContent;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+    
+            const copyButton = document.getElementById("copyButton");
+            copyButton.textContent = "Copied to Clipboard";
+    
+            setTimeout(() => {
+                copyButton.textContent = "Copy Code";
+            }, 500);
+        }
+    </script>
+    
+    
+</body>
+</html>

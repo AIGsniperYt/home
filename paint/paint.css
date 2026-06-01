@@ -1,0 +1,157 @@
+body {
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.toolbar {
+    /* Add these properties to allow dynamic positioning */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    /* Remaining CSS styles */
+    background-color: #f0f0f0;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 10px 0;
+}
+
+
+
+/* CSS for dropdown menu */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropbtn {
+    background-color: #f0f0f0;
+    color: #000;
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    z-index: 1;
+}
+
+.dropdown-content button {
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    background-color: inherit;
+    cursor: pointer;
+}
+
+.dropdown-content button:hover {
+    background-color: #ddd;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .dropbtn {
+    background-color: #ccc;
+}
+
+
+.canvas-container {
+    margin-top: 50px; /* Adjust as needed */
+}
+
+canvas {
+    border: 1px solid #000;
+    transition: border-color 0.5s;
+}
+
+canvas {
+    border: 1px solid #000;
+    transition: border-color 0.5s;
+}
+
+button {
+    border: 2px solid #000;
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: border-color 0.5s, color 0.5s, background-color 0.5s;
+}
+
+label {
+    transition: color 0.5s;
+}
+
+button:hover {
+    background-color: #f0f0f0;
+}
+
+.dark-mode body {
+    background-color: #000;
+}
+
+.dark-mode canvas {
+    border-color: #fff;
+}
+
+.dark-mode button {
+    color: #fff;
+    border-color: #fff;
+    background-color: #000;
+}
+
+.dark-mode label {
+    color: #fff;
+}
+
+#black {
+    background-color: black;
+}
+
+#white {
+    background-color: white;
+}
+
+#blue {
+    background-color: blue;
+}
+
+#green {
+    background-color: green;
+}
+
+#red {
+    background-color: red;
+}
+
+#orange {
+    background-color: orange;
+}
+
+#brown {
+    background-color: brown;
+}
+
+#pink {
+    background-color: pink;
+}
+
+#yellow {
+    background-color: yellow;
+}
+

@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hex</title>
+  <style>
+    :root{--bg:#0b1220;--panel:#0f1720;--line:#8fa3d6;--p1:#2aa4f4;--p2:#f04a4a}
+    html,body{height:100%;margin:0;background:var(--bg);color:#cfe0ff;font-family:Inter, system-ui, sans-serif}
+    .stage{display:flex;align-items:stretch;justify-content:center;height:100%;position:relative;padding:20px;gap:20px}
+    .board-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+    canvas{background:linear-gradient(180deg,#06111b 0%, #071826 100%);border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.6);max-width:100%;max-height:100%}
+    .hud{width:320px;background:var(--panel);padding:12px;border-radius:10px;box-shadow:0 8px 22px rgba(0,0,0,.6);display:flex;flex-direction:column}
+    .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    button{padding:8px 10px;border-radius:8px;border:0;background:#17293f;color:#cfe0ff;cursor:pointer}
+    .muted{font-size:13px;color:#9fb2e6}
+    .moves{flex:1;overflow:visible;background:rgba(255,255,255,0.02);padding:8px;border-radius:6px;font-family:monospace;font-size:13px;margin-top:8px}
+    .controls{display:flex;gap:6px;flex-wrap:wrap}
+    strong.turn{display:inline-block;padding:4px 8px;border-radius:6px}
+    .mode{display:flex;gap:6px;align-items:center}
+    label{font-size:13px}
+    .thinking{font-size:13px;color:#ffd27a;margin-left:6px}
+    input[type=number]{width:56px}
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="board-wrap">
+      <canvas id="c" width="900" height="820"></canvas>
+    </div>
+
+    <div class="hud">
+      <div class="row"><div>Mode:</div>
+        <div class="mode">
+          <select id="mode">
+            <option value="pvp">Player vs Player</option>
+            <option value="pvai">Player vs AI</option>
+          </select>
+          <label style="font-size:12px;color:#9fb2e6">AI as Red (West-East)</label>
+        </div>
+      </div>
+
+      <div class="row"><div>Turn:</div><div id="turn" class="turn">Blue</div><div id="think" class="thinking"></div></div>
+
+      <div class="row controls">
+        <button id="prev">⟵</button>
+        <button id="next">⟶</button>
+        <button id="undo">Undo</button>
+        <button id="redo">Redo</button>
+        <button id="restart">Restart</button>
+      </div>
+
+      <div style="margin-top:8px" class="muted">Click a hex to place. Blue = North–South, Red = West–East.</div>
+
+      <div style="margin-top:10px;font-weight:600">Moves</div>
+      <div id="moves" class="moves"></div>
+
+      <div style="margin-top:8px" class="muted">AI sims per candidate (higher = stronger/slower):</div>
+      <div class="row"><input id="sims" type="range" min="10" max="1200" step="10" value="120"><div id="simsVal">120</div></div>
+
+      <div style="margin-top:6px" class="muted">AI lookahead depth:</div>
+      <div class="row"><input id="depth" type="number" min="1" max="6" value="3"></div>
+
+      <div style="margin-top:6px" class="muted"><label><input id="showBridges" type="checkbox"> Show predicted bridge threats</label></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const modeSelect = document.getElementById('mode');
+  const simsInput = document.getElementById('sims');
+  const simsVal = document.getElementById('simsVal');
+  const thinkEl = document.getElementById('think');
+  const depthInput = document.getElementById('depth');
+  const showBridgesCheckbox = document.getElementById('showBridges');
+
+  function fit(){ const wrap = document.querySelector('.board-wrap'); const rect = wrap.getBoundingClientRect(); canvas.width = Math.max(320, Math.floor(rect.width - 20)); canvas.height = Math.max(320, Math.floor(rect.height - 20)); }
+  fit(); window.addEventListener('resize', ()=>{ fit(); computeLayout(); draw(); });
+
+  let hexSize = 36; const rows = 7, cols = 7; let origin = {x:0,y:0};
+  function computeLayout(){ const pad=40; const availW=canvas.width-pad*2; const availH=canvas.height-pad*2; const sW=availW/(Math.sqrt(3)*(cols + (rows-1)/2)); const sH=availH/(1.5*rows+0.5); hexSize=Math.max(12,Math.floor(Math.min(sW,sH))); const w = Math.sqrt(3)*hexSize*(cols + (rows-1)/2); const h = 1.5*hexSize*rows + hexSize*0.2; origin.x = (canvas.width - w)/2; origin.y = (canvas.height - h)/2; }
+  computeLayout();
+
+  let board = [];
+  let turn = 1; let winner = null; const turnLabel = document.getElementById('turn'); const movesEl = document.getElementById('moves'); let history = []; let histIndex = -1; let aiThinking = false;
+  simsInput.addEventListener('input', ()=> simsVal.textContent = simsInput.value);
+
+  // tunables
+  let TOGGLE_SHOW_BRIDGES = false;
+  showBridgesCheckbox.addEventListener('change', ()=>{ TOGGLE_SHOW_BRIDGES = showBridgesCheckbox.checked; draw(); });
+
+  function init(){ board = Array.from({length:cols}, ()=>Array(rows).fill(0)); turn = 1; winner = null; history = []; histIndex=-1; aiThinking=false; updateTurnLabel(); renderMoves(); draw(); maybeAI(); }
+  function updateTurnLabel(){ turnLabel.textContent = turn===1? 'Blue' : 'Red'; turnLabel.style.background = turn===1? 'var(--p1)' : 'var(--p2)'; }
+
+  function hexToPixel(q,r){ const s=hexSize; const w=Math.sqrt(3)*s; const x=w*(q + r/2); const y=1.5*s*r; return {x: x + origin.x + s, y: y + origin.y + s}; }
+  function polygonPath(x,y){ const s=hexSize; const p=new Path2D(); for(let i=0;i<6;i++){ const ang=Math.PI/180*(60*i-30); const vx=x+s*Math.cos(ang), vy=y+s*Math.sin(ang); if(i===0) p.moveTo(vx,vy); else p.lineTo(vx,vy);} p.closePath(); return p }
+
+  function drawEdgeBands(){ const centers=[]; for(let q=0;q<cols;q++) for(let r=0;r<rows;r++) centers.push(hexToPixel(q,r)); const xs=centers.map(c=>c.x), ys=centers.map(c=>c.y); const minX=Math.min(...xs)-hexSize-10, maxX=Math.max(...xs)+hexSize+10; const minY=Math.min(...ys)-hexSize-10, maxY=Math.max(...ys)+hexSize+10; ctx.fillStyle='rgba(42,164,244,0.08)'; ctx.fillRect(minX, minY-40, maxX-minX, 40); ctx.fillRect(minX, maxY, maxX-minX, 40); ctx.fillStyle='rgba(240,74,74,0.08)'; ctx.fillRect(minX-40, minY-10, 40, maxY-minY+20); ctx.fillRect(maxX, minY-10, 40, maxY-minY+20); }
+
+  function drawPredictedBridges(pred){ // pred = {own: [[q,r],...], opp: [[q,r],...]}
+    if(!pred) return;
+    ctx.save();
+    for(const [q,r] of pred.opp||[]){ const {x,y}=hexToPixel(q,r); ctx.beginPath(); ctx.arc(x,y, hexSize*0.28, 0, Math.PI*2); ctx.fillStyle='rgba(240,74,74,0.85)'; ctx.fill(); }
+    for(const [q,r] of pred.own||[]){ const {x,y}=hexToPixel(q,r); ctx.beginPath(); ctx.arc(x,y, hexSize*0.28, 0, Math.PI*2); ctx.fillStyle='rgba(42,164,244,0.85)'; ctx.fill(); }
+    ctx.restore();
+  }
+
+  function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); drawEdgeBands(); for(let q=0;q<cols;q++){ for(let r=0;r<rows;r++){ const {x,y}=hexToPixel(q,r); const path=polygonPath(x,y); ctx.lineWidth=2; ctx.strokeStyle='rgba(140,163,214,0.6)'; ctx.stroke(path); const v=board[q][r]; if(v===1){ ctx.fillStyle='rgba(42,164,244,0.95)'; ctx.fill(path);} if(v===2){ ctx.fillStyle='rgba(240,74,74,0.95)'; ctx.fill(path);} } }
+    if(TOGGLE_SHOW_BRIDGES){ const pred = predictBridgeThreats(); drawPredictedBridges(pred); }
+    if(winner){ ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle = winner===1? 'rgba(42,164,244,1)' : 'rgba(240,74,74,1)'; ctx.font='36px sans-serif'; ctx.textAlign='center'; ctx.fillText((winner===1?'Blue':'Red')+' wins!', canvas.width/2, canvas.height/2); } }
+
+  const neighbors = [[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]]; function inside(q,r){ return q>=0 && q<cols && r>=0 && r<rows }
+  function cloneBoard(brd){ return brd.map(col=>col.slice()) }
+  function listEmpty(brd){ const out=[]; for(let q=0;q<cols;q++) for(let r=0;r<rows;r++) if(brd[q][r]===0) out.push([q,r]); return out }
+
+  // --- shortest path via Dijkstra (weights: player=0, empty=1, opponent=1000) ---
+  function shortestPathCost(player,brd){ const B = brd||board; const INF = 1e9; const dist = Array.from({length:cols}, ()=>Array(rows).fill(INF)); const pq = new MinPQ();
+    // starting edge cells
+    if(player===1){ for(let q=0;q<cols;q++){ const r=0; const w = (B[q][r]===player)?0:(B[q][r]===0?1:1000); dist[q][r]=w; pq.push({q,r,d:w}); } }
+    else { for(let r=0;r<rows;r++){ const q=0; const w = (B[q][r]===player)?0:(B[q][r]===0?1:1000); dist[q][r]=w; pq.push({q,r,d:w}); } }
+    while(!pq.empty()){ const cur = pq.pop(); const q=cur.q, r=cur.r; const dcur = cur.d; if(dcur!==dist[q][r]) continue; // outdated
+      // goal check
+      if(player===1 && r===rows-1) return dcur; if(player===2 && q===cols-1) return dcur;
+      for(const [dq,dr] of neighbors){ const nq=q+dq, nr=r+dr; if(!inside(nq,nr)) continue; const cell = B[nq][nr]; const w = (cell===player)?0:(cell===0?1:1000); if(dist[nq][nr] > dcur + w){ dist[nq][nr] = dcur + w; pq.push({q:nq,r:nr,d:dist[nq][nr]}); } }
+    }
+    return INF; }
+
+  // simple min-priority queue (binary heap)
+  class MinPQ{ constructor(){ this.a=[] } push(obj){ this.a.push(obj); let i=this.a.length-1; while(i>0){ const p=(i-1)>>1; if(this.a[p].d<=this.a[i].d) break; [this.a[p],this.a[i]]=[this.a[i],this.a[p]]; i=p; } } pop(){ if(this.a.length===0) return null; const ret=this.a[0]; const last=this.a.pop(); if(this.a.length>0){ this.a[0]=last; let i=0; while(true){ let l=2*i+1, r=2*i+2, smallest=i; if(l<this.a.length && this.a[l].d < this.a[smallest].d) smallest=l; if(r<this.a.length && this.a[r].d < this.a[smallest].d) smallest=r; if(smallest===i) break; [this.a[i],this.a[smallest]]=[this.a[smallest],this.a[i]]; i=smallest; } } return ret; } empty(){ return this.a.length===0 } }
+
+  function checkWin(player,brd){ const B = brd || board; const visited = Array.from({length:cols}, ()=>Array(rows).fill(false)); const queue = []; if(player===1){ for(let q=0;q<cols;q++) if(B[q][0]===1){ queue.push([q,0]); visited[q][0]=true } while(queue.length){ const [q,r]=queue.shift(); if(r===rows-1) return true; for(const [dq,dr] of neighbors){ const nq=q+dq,nr=r+dr; if(inside(nq,nr) && !visited[nq][nr] && B[nq][nr]===1){ visited[nq][nr]=true; queue.push([nq,nr]); } } } } else { for(let r=0;r<rows;r++) if(B[0][r]===2){ queue.push([0,r]); visited[0][r]=true } while(queue.length){ const [q,r]=queue.shift(); if(q===cols-1) return true; for(const [dq,dr] of neighbors){ const nq=q+dq,nr=r+dr; if(inside(nq,nr) && !visited[nq][nr] && B[nq][nr]===2){ visited[nq][nr]=true; queue.push([nq,nr]); } } } } return false; }
+
+  function isWinningMove(q,r,player,brd){ const B=cloneBoard(brd||board); B[q][r]=player; return checkWin(player,B); }
+
+  function neighborCount(q,r,player,brd){ let c=0; const B=brd||board; for(const [dq,dr] of neighbors){ const nq=q+dq,nr=r+dr; if(inside(nq,nr) && B[nq][nr]===player) c++; } return c; }
+
+  function hexDist(a,b){ const aq=a[0], ar=a[1], bq=b[0], br=b[1]; const x1 = aq, z1 = ar, y1 = -x1-z1; const x2=bq, z2=br, y2 = -x2-z2; return (Math.abs(x1-x2)+Math.abs(y1-y2)+Math.abs(z1-z2))/2; }
+
+  // detect bridge candidates: pairs of player's stones at distance 2 with two empty connecting cells
+  function detectBridgesForPlayer(player,brd){ const B = brd || board; const bridges = []; for(let q1=0;q1<cols;q1++) for(let r1=0;r1<rows;r1++) if(B[q1][r1]===player) for(let q2=0;q2<cols;q2++) for(let r2=0;r2<rows;r2++) if(B[q2][r2]===player){ const d = hexDist([q1,r1],[q2,r2]); if(d===2){ // find intermediate empty cells that connect them
+        // two candidates: neighbors of q1 at dist1 that are adjacent to q2
+        const candidates = []; for(const [dq,dr] of neighbors){ const mq=q1+dq, mr=r1+dr; if(!inside(mq,mr)) continue; if(B[mq][mr]===0){ // check adjacency to q2
+              for(const [dq2,dr2] of neighbors){ const nx=mq+dq2, ny=mr+dr2; if(nx===q2 && ny===r2){ candidates.push([mq,mr]); } }
+        } }
+        if(candidates.length>=1){ bridges.push({a:[q1,r1], b:[q2,r2], options:candidates}); }
+    } }
+    return bridges; }
+
+  // score move by its effect on shortest path and bridge potential (higher=better)
+  function evalMoveQuick(q,r,player,brd){ if((brd||board)[q][r]!==0) return -1e6; const B=cloneBoard(brd||board); B[q][r]=player; const myBefore = shortestPathCost(player, brd||board); const myAfter = shortestPathCost(player, B); const opp = player===1?2:1; const oppBefore = shortestPathCost(opp, brd||board); const oppAfter = shortestPathCost(opp, B); // we prefer moves that reduce our cost and increase opponent's
+    const dMy = myBefore - myAfter; const dOpp = oppAfter - oppBefore; let score = dMy*100 + dOpp*90; // weighted
+    // bridge potential
+    score += bridgePotentialForCell(q,r,player,brd||board)*12;
+    // prefer immediate neighbors (connectivity)
+    score += neighborCount(q,r,player,brd||board)*10;
+    // small center bias
+    const centerQ=(cols-1)/2, centerR=(rows-1)/2; const distCenter=Math.hypot(q-centerQ, r-centerR); score += Math.max(0, 6 - distCenter);
+    return score; }
+
+  function bridgePotentialForCell(q,r,player,brd){ const B = brd || board; let score=0; const ncount=neighborCount(q,r,player,B); score += ncount*2; for(let sq=0;sq<cols;sq++) for(let sr=0;sr<rows;sr++) if(B[sq][sr]===player){ const d=hexDist([sq,sr],[q,r]); if(d===2) score+=1; } return score; }
+
+  // heuristic to pick top candidates (avoid huge branching)
+  function pickCandidates(player,limit){ const empties = listEmpty(board); const scored = empties.map(([q,r])=>({q,r,score:evalMoveQuick(q,r,player)})); scored.sort((a,b)=>b.score-a.score); return scored.slice(0, Math.min(limit, scored.length)); }
+
+  // minimax with alpha-beta, depth in plies. We assume small branching (we'll limit candidates)
+  function minimax(brd, playerToMove, depth, alpha, beta){ // returns {score, move}
+    // terminal or depth 0 -> evaluate with shortest path heuristic
+    if(depth===0){ const my = shortestPathCost(2, brd); const opp = shortestPathCost(1, brd); // we are maximizing for player 2 in AI call
+        // prefer smaller my path and larger opp path: score = opp - my
+        const val = (opp - my);
+        return {score: val}; }
+    // generate candidates for current mover
+    const limit = Math.max(4, Math.min(7, Math.floor(20 / (depth+1)))); // fewer at deeper
+    const cands = pickCandidates(playerToMove, limit);
+    if(cands.length===0) return {score: (playerToMove===2? -1000:1000)};
+    let bestMove = null;
+    if(playerToMove===2){ // maximizing for AI
+      let best = -Infinity;
+      for(const cand of cands){ const B = cloneBoard(brd); B[cand.q][cand.r]=playerToMove; if(checkWin(playerToMove,B)) return {score: 1e6, move:[cand.q,cand.r]}; const res = minimax(B, 1, depth-1, alpha, beta); if(res.score>best){ best = res.score; bestMove=[cand.q,cand.r]; } alpha = Math.max(alpha, best); if(beta<=alpha) break; }
+      return {score: best, move: bestMove};
+    } else { // minimizing for opponent
+      let best = Infinity;
+      for(const cand of cands){ const B = cloneBoard(brd); B[cand.q][cand.r]=playerToMove; if(checkWin(playerToMove,B)) return {score: -1e6, move:[cand.q,cand.r]}; const res = minimax(B, 2, depth-1, alpha, beta); if(res.score<best){ best = res.score; bestMove=[cand.q,cand.r]; } beta = Math.min(beta, best); if(beta<=alpha) break; }
+      return {score: best, move: bestMove};
+    }
+  }
+
+  // fast MC playout used for tie-breaking: random with slight bias to heuristic
+  function fastPlayoutWinner(startBoard, biasPlayer=null){ const B = cloneBoard(startBoard); const empties = listEmpty(B); // shuffle
+    for(let i=empties.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [empties[i],empties[j]]=[empties[j],empties[i]] }
+    // simple fill alternating
+    let cnt1=0,cnt2=0; for(let q=0;q<cols;q++) for(let r=0;r<rows;r++){ if(B[q][r]===1) cnt1++; if(B[q][r]===2) cnt2++; }
+    let next = (cnt1<=cnt2)?1:2;
+    for(const [q,r] of empties){ B[q][r]=next; next = next===1?2:1 }
+    if(checkWin(2,B)) return 2; if(checkWin(1,B)) return 1; return 0; }
+
+  // predict bridge threats to visualize
+  function predictBridgeThreats(){ const own = []; const opp = []; const bOwn = detectBridgesForPlayer(2); const bOpp = detectBridgesForPlayer(1); // show key empty cells in those bridges
+    for(const br of bOwn){ for(const opt of br.options) own.push(opt); }
+    for(const br of bOpp){ for(const opt of br.options) opp.push(opt); }
+    return {own, opp}; }
+
+  // improved AI chooser: immediate checks -> minimax on top candidates -> fallback to MC
+  async function aiChooseMove(player){ aiThinking=true; thinkEl.textContent='AI thinking...'; const empties = listEmpty(board); if(empties.length===0){ aiThinking=false; thinkEl.textContent=''; return null }
+    // 1 immediate win
+    for(const [q,r] of empties) if(isWinningMove(q,r,player,board)){ aiThinking=false; thinkEl.textContent=''; return [q,r]; }
+    // 2 block opponent immediate win
+    const opp = player===1?2:1; for(const [q,r] of empties) if(isWinningMove(q,r,opp,board)){ aiThinking=false; thinkEl.textContent=''; return [q,r]; }
+
+    // 3 detect opponent bridges and block high-value ones first
+    const oppBridges = detectBridgesForPlayer(1); if(oppBridges.length>0){ // flatten options and score
+      const opts = [];
+      for(const br of oppBridges){ for(const [q,r] of br.options) if(board[q][r]===0) opts.push([q,r]); }
+      if(opts.length>0){ // pick one that most reduces opponent's bridge potential or reduces opponent shortest path
+        let best=null, bestScore=-Infinity; for(const [q,r] of opts){ const s = evalMoveQuick(q,r,2); if(s>bestScore){ bestScore=s; best=[q,r]; } }
+        if(best){ aiThinking=false; thinkEl.textContent=''; return best; }
+      }
+    }
+
+    // 4 use minimax with iterative deepening (depth from input)
+    const depth = Math.max(1, Math.min(6, parseInt(depthInput.value,10)||3));
+    // pick top candidates to run minimax on
+    const preCandidates = pickCandidates(player, 10);
+    // limit to K best by quick eval
+    const K = Math.min(6, Math.max(3, Math.floor(preCandidates.length/2)));
+    const candidates = preCandidates.slice(0,K);
+
+    let bestMove = null; let bestScore = -Infinity;
+    for(const cand of candidates){ const B = cloneBoard(board); B[cand.q][cand.r]=player; // quick pruning if candidate obviously bad
+        // run minimax with given depth-1 because we've just applied one move
+        const res = minimax(B, (player===2?1:2), depth-1, -1e9, 1e9);
+        // combine res.score with quick eval
+        const combined = (res.score || 0) + cand.score*0.001; // res.score is main
+        if(combined>bestScore){ bestScore=combined; bestMove=[cand.q,cand.r]; }
+    }
+
+    // if tie or no result, fall back to MC on top few
+    if(!bestMove){ // fallback
+      const sims = Math.max(40, parseInt(simsInput.value,10)||120);
+      let best=null; let bestRate=-1;
+      for(const cand of candidates.slice(0,4)){
+        let wins=0; for(let i=0;i<sims;i++){ const B=cloneBoard(board); B[cand.q][cand.r]=player; if(fastPlayoutWinner(B)===player) wins++; }
+        const rate = wins/sims; if(rate>bestRate){ bestRate=rate; best=[cand.q,cand.r]; }
+      }
+      bestMove = best;
+    }
+
+    aiThinking=false; thinkEl.textContent=''; return bestMove; }
+
+  async function maybeAI(){ if(modeSelect.value==='pvai' && turn===2 && !winner && !aiThinking){ const move = await aiChooseMove(2); if(move){ const [q,r]=move; board[q][r]=2; pushMove(q,r,2); if(checkWin(2)) winner=2; else turn=1; updateTurnLabel(); draw(); } } }
+
+  // rest UI (moves/history)
+  function pushMove(q,r,player){ if(histIndex < history.length-1) history = history.slice(0, histIndex+1); history.push({q,r,player}); histIndex = history.length-1; renderMoves(); }
+  function applyMoveObj(m,brd){ (brd||board)[m.q][m.r] = m.player; }
+  function undoOne(){ if(histIndex<0) return; const m=history[histIndex]; board[m.q][m.r]=0; histIndex--; turn=(histIndex>=0)?(history[histIndex].player===1?2:1):1; winner=null; updateTurnLabel(); renderMoves(); draw(); }
+  function redoOne(){ if(histIndex>=history.length-1) return; histIndex++; const m=history[histIndex]; applyMoveObj(m); turn=m.player===1?2:1; if(checkWin(m.player)) winner=m.player; updateTurnLabel(); renderMoves(); draw(); maybeAI(); }
+  function goToIndex(idx){ board=Array.from({length:cols}, ()=>Array(rows).fill(0)); for(let i=0;i<=idx;i++){ const m=history[i]; board[m.q][m.r]=m.player; } histIndex=idx; turn=(histIndex>=0)?(history[histIndex].player===1?2:1):1; winner=null; if(histIndex>=0 && checkWin(history[histIndex].player)) winner=history[histIndex].player; updateTurnLabel(); renderMoves(); draw(); }
+  function renderMoves(){ movesEl.innerHTML=''; history.forEach((m,i)=>{ const el=document.createElement('div'); el.textContent = `${i+1}. (${m.q},${m.r}) ${m.player===1? 'Blue' : 'Red'}`; if(i===histIndex) el.style.background='rgba(255,255,255,0.03)'; el.style.padding='4px 6px'; el.style.borderRadius='4px'; el.style.cursor='pointer'; el.addEventListener('click', ()=> goToIndex(i)); movesEl.appendChild(el); }); }
+
+  canvas.addEventListener('pointerdown', async (e)=>{ if(winner || aiThinking) return; const rect=canvas.getBoundingClientRect(); const mx=e.clientX-rect.left, my=e.clientY-rect.top; outer: for(let q=0;q<cols;q++){ for(let r=0;r<rows;r++){ const {x,y}=hexToPixel(q,r); const path=polygonPath(x,y); if(ctx.isPointInPath(path, mx, my)){ if(board[q][r]===0){ board[q][r]=turn; pushMove(q,r,turn); if(checkWin(turn)) winner=turn; else turn = turn===1?2:1; updateTurnLabel(); draw(); maybeAI(); } break outer; } } } });
+
+  document.getElementById('restart').addEventListener('click', init); document.getElementById('undo').addEventListener('click', ()=> undoOne()); document.getElementById('redo').addEventListener('click', ()=> redoOne()); document.getElementById('prev').addEventListener('click', ()=> goToIndex(Math.max(-1, histIndex-1))); document.getElementById('next').addEventListener('click', ()=> goToIndex(Math.min(history.length-1, histIndex+1)));
+  window.addEventListener('keydown', (e)=>{ if(e.key==='z'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); undoOne(); } if(e.key==='y'&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); redoOne(); } if(e.key==='ArrowLeft') goToIndex(Math.max(-1, histIndex-1)); if(e.key==='ArrowRight') goToIndex(Math.min(history.length-1, histIndex+1)); });
+
+  computeLayout(); init(); setTimeout(()=>{ fit(); computeLayout(); draw(); },60);
+
+})();
+</script>
+</body>
+</html>
