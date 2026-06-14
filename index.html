@@ -418,6 +418,17 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid rgba(var(--emerald-rgb), 0.08);
 }
 
+.browser-card-archive {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    transition: color 0.3s;
+    flex-shrink: 0;
+}
+
+.browser-card-archive:hover {
+    color: var(--emerald) !important;
+}
+
 .browser-card-arrow {
     color: var(--text-muted);
     font-size: 0.75rem;
@@ -716,6 +727,43 @@ header .container {
     flex-wrap: wrap;
 }
 
+.hero-content .hero-badge,
+.hero-content h1,
+.hero-content p,
+.hero-content .hero-actions {
+    opacity: 0;
+}
+
+.hero-content.animate .hero-badge {
+    animation: land-badge 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+.hero-content.animate h1 {
+    background-size: 200% auto;
+    animation: land-up 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.35s both,
+               land-shimmer 4s ease-in-out 0.35s infinite;
+}
+
+.hero-content.animate p {
+    animation: land-up 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.55s both;
+}
+
+.hero-content.animate .hero-actions {
+    animation: land-up 0.65s cubic-bezier(0.22, 0.61, 0.36, 1) 0.75s both;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background: radial-gradient(ellipse at 50% 0%, rgba(var(--emerald-rgb), 0.08), transparent 55%);
+    opacity: 0;
+    transform-origin: top center;
+    animation: land-glow-in 1.8s ease 0.1s both;
+}
+
 .scroll-indicator {
     position: absolute;
     bottom: 40px;
@@ -724,23 +772,52 @@ header .container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
+    gap: 10px;
+    color: var(--emerald);
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    animation: bob-down 2s ease-in-out infinite;
+    opacity: 0;
+    text-shadow: 0 0 12px var(--emerald-glow);
+    animation: bob-down 2s ease-in-out 1.5s infinite, land-fade 0.8s ease 1.5s both;
 }
 
 .scroll-indicator .line {
-    width: 1px;
-    height: 40px;
+    width: 1.5px;
+    height: 44px;
     background: linear-gradient(to bottom, var(--emerald), transparent);
+    box-shadow: 0 0 8px var(--emerald-glow);
 }
 
 @keyframes bob-down {
     0%, 100% { transform: translateX(-50%) translateY(0); }
     50% { transform: translateX(-50%) translateY(8px); }
+}
+
+@keyframes land-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes land-badge {
+    0% { opacity: 0; transform: scale(0.75) translateY(12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes land-up {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes land-shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+@keyframes land-glow-in {
+    0% { opacity: 0; transform: scaleY(0.2); }
+    40% { opacity: 1; }
+    100% { opacity: 0.6; transform: scaleY(1); }
 }
 
 /* ── Latest Update ── */
@@ -1549,6 +1626,7 @@ const portfolioData = {
             description: "Browser-based 3D flight sim with procedurally generated terrain, realistic physics, and chase camera.",
             tags: ["Three.js", "WebGL", "3D", "Simulation", "Flight"],
             url: "https://aigsniperyt.github.io/flight-sim/",
+            archiveUrl: "https://aigsniperyt.github.io/webgl/",
             icon: "plane",
             category: "3D"
         }
@@ -1620,6 +1698,7 @@ const portfolioData = {
             description: "Browser-based 3D flight sim with procedurally generated terrain, realistic physics, and chase camera.",
             tags: ["Three.js", "WebGL", "3D", "Simulation", "Flight"],
             url: "https://aigsniperyt.github.io/flight-sim/",
+            archiveUrl: "https://aigsniperyt.github.io/webgl/",
             icon: "plane",
             category: "3D"
         },
@@ -1911,9 +1990,13 @@ refreshThemeRgb();
     let time = 0;
     let lastStreak = Date.now();
     let activeStreak = null;
+    let lastMicroFlare = Date.now();
     let initialized = false;
+    let heroRevealTime = -1;
+    let cursorX = -1, cursorY = -1;
+    let trailParticles = [];
+    let lastTrailSpawn = 0;
 
-    /* ── depth layers ── */
     const LAYERS = [
         { label:'far',  parallax:[0.0,0.12],  size:[0.8,1.5],    baseA:[0.30,0.45],   weight:0.30, edgeBoost:1.4, twinkle:[0.1,0.6] },
         { label:'mid',  parallax:[0.18,0.38], size:[1.2,2.0],    baseA:[0.45,0.60],   weight:0.30, edgeBoost:1.3, twinkle:[0.3,1.0] },
@@ -1932,74 +2015,6 @@ refreshThemeRgb();
         );
     }
 
-    function generate() {
-        stars = [];
-        connections = [];
-        const w = window.innerWidth;
-        const h = getDocHeight();
-        s.width = w;
-        s.height = window.innerHeight;
-        s.style.width = w + 'px';
-        s.style.height = window.innerHeight + 'px';
-
-        /* grid-based even placement */
-        const cellW = 82, cellH = 82;
-        const cols = Math.ceil(w / cellW);
-        const rows = Math.ceil(h / cellH);
-
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                /* pick a layer weighted by probability */
-                let roll = Math.random(), layer;
-                for (let l of LAYERS) {
-                    roll -= l.weight;
-                    if (roll <= 0) { layer = l; break; }
-                }
-                if (!layer) layer = LAYERS[LAYERS.length - 1];
-
-                /* jitter within cell */
-                const x = (c + 0.5) * cellW + (Math.random() - 0.5) * cellW * 0.7;
-                const y = (r + 0.5) * cellH + (Math.random() - 0.5) * cellH * 0.7;
-                const isEdge = x < w * 0.08 || x > w * 0.92;
-
-                const baseA = isEdge ? layer.baseA[1] * rand(1, layer.edgeBoost) : rand(...layer.baseA);
-                stars.push({
-                    x, y,
-                    parallax: rand(...layer.parallax),
-                    r: isEdge ? layer.size[1] * rand(1, layer.edgeBoost) : rand(...layer.size),
-                    baseA,
-                    currentA: baseA * 0.55,
-                    isLit: false,
-                    inBand: false,
-                    pulse: 0,
-                    twinkleSpeed: rand(...layer.twinkle),
-                    twinklePhase: Math.random() * Math.PI * 2,
-                });
-            }
-        }
-
-        /* connections — same-depth nearby stars only */
-        for (let i = 0; i < stars.length; i++) {
-            for (let j = i + 1; j < stars.length; j++) {
-                const a = stars[i], b = stars[j];
-                /* skip if parallax differs too much — they'll visually separate */
-                if (Math.abs(a.parallax - b.parallax) > 0.25) continue;
-                const aEdge = a.x < w * 0.1 || a.x > w * 0.9;
-                const bEdge = b.x < w * 0.1 || b.x > w * 0.9;
-                if (aEdge !== bEdge) continue;
-                const dy = a.y - b.y;
-                if (Math.abs(dy) > 200) continue;
-                const dx = a.x - b.x;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const maxD = aEdge ? 140 : 100;
-                if (dist < maxD && dist > 8) {
-                    connections.push({ a, b, dist, maxDist: maxD });
-                }
-            }
-        }
-        initialized = true;
-    }
-
     function getConstellationInView() {
         const el = document.getElementById('constellation');
         if (!el) return 0;
@@ -2010,7 +2025,118 @@ refreshThemeRgb();
         return visible / r.height;
     }
 
-    /* Generate once after full load */
+    function generate() {
+        stars = [];
+        connections = [];
+        const w = window.innerWidth;
+        const h = getDocHeight();
+        s.width = w;
+        s.height = window.innerHeight;
+        s.style.width = w + 'px';
+        s.style.height = window.innerHeight + 'px';
+
+        const cellW = 98, cellH = 98;
+        const cols = Math.ceil(w / cellW);
+        const rows = Math.ceil(h / cellH);
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                let roll = Math.random(), layer;
+                for (let l of LAYERS) {
+                    roll -= l.weight;
+                    if (roll <= 0) { layer = l; break; }
+                }
+                if (!layer) layer = LAYERS[LAYERS.length - 1];
+
+                const x = (c + 0.5) * cellW + (Math.random() - 0.5) * cellW * 0.7;
+                const y = (r + 0.5) * cellH + (Math.random() - 0.5) * cellH * 0.7;
+                const isEdge = x < w * 0.08 || x > w * 0.92;
+
+                const baseA = isEdge ? layer.baseA[1] * rand(1, layer.edgeBoost) : rand(...layer.baseA);
+                stars.push({
+                    x, y,
+                    parallax: rand(...layer.parallax),
+                    r: isEdge ? layer.size[1] * rand(1, layer.edgeBoost) : rand(...layer.size),
+                    baseA,
+                    currentA: baseA * 0.4,
+                    isLit: false,
+                    revealed: false,
+                    glow: 0,
+                    glowTarget: 0,
+                    flash: 0,
+                    litTime: -1,
+                    inBand: false,
+                    scrollPhase: (Math.random() - 0.5) * 180,
+                    twinkleSpeed: rand(...layer.twinkle),
+                    twinklePhase: Math.random() * Math.PI * 2,
+                });
+            }
+        }
+
+        for (let i = 0; i < stars.length; i++) {
+            for (let j = i + 1; j < stars.length; j++) {
+                const a = stars[i], b = stars[j];
+                if (Math.abs(a.parallax - b.parallax) > 0.35) continue;
+                const aEdge = a.x < w * 0.1 || a.x > w * 0.9;
+                const bEdge = b.x < w * 0.1 || b.x > w * 0.9;
+                if (aEdge !== bEdge) continue;
+                const dy = a.y - b.y;
+                if (Math.abs(dy) > 240) continue;
+                const dx = a.x - b.x;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const maxD = aEdge ? 170 : 130;
+                if (dist < maxD && dist > 8) {
+                    connections.push({ a, b, dist, maxDist: maxD });
+                }
+            }
+        }
+        initialized = true;
+    }
+
+    function startInitSpread() {
+        const vh = window.innerHeight;
+        const viewCenter = vh / 2;
+        const sorted = stars.map(st => ({
+            st,
+            dist: Math.abs(st.y - viewCenter) + (Math.random() - 0.5) * vh * 0.35
+        })).sort((a, b) => a.dist - b.dist);
+        let idx = 0;
+        const totalFrames = 80;
+        const batchSize = Math.max(1, Math.floor(stars.length / totalFrames));
+        function tick() {
+            for (let i = 0; i < batchSize && idx < sorted.length; i++, idx++) {
+                const s = sorted[idx].st;
+                s.isLit = true;
+                s.litTime = time;
+                s.glowTarget = 0.7;
+                s.flash = 0.3;
+            }
+            if (idx < sorted.length) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function startHeroReveal() {
+        heroRevealTime = time;
+        const vh = window.innerHeight;
+        const viewCenter = window.innerHeight / 2;
+        const sorted = stars
+            .map(st => ({ st, dist: Math.abs(st.y - viewCenter) + (Math.random() - 0.5) * vh * 0.35 }))
+            .sort((a, b) => a.dist - b.dist);
+        let idx = 0;
+        const totalFrames = 300;
+        const batchSize = Math.max(1, Math.floor(stars.length / totalFrames));
+        function tick() {
+            for (let i = 0; i < batchSize && idx < sorted.length; i++, idx++) {
+                const s = sorted[idx].st;
+                s.revealed = true;
+                s.glowTarget = 1.0;
+            }
+            if (idx < sorted.length) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
     function tryGenerate() {
         if (initialized) return;
         if (getDocHeight() < 100) { setTimeout(tryGenerate, 200); return; }
@@ -2023,7 +2149,6 @@ refreshThemeRgb();
         if (document.readyState !== 'loading') tryGenerate();
     }
 
-    /* Resize: match canvas drawing surface to CSS display exactly */
     function fitCanvas() {
         const w = window.innerWidth;
         const h = window.innerHeight;
@@ -2034,6 +2159,10 @@ refreshThemeRgb();
     }
     fitCanvas();
     window.addEventListener('resize', fitCanvas);
+    document.addEventListener('mousemove', e => {
+        cursorX = e.clientX;
+        cursorY = e.clientY;
+    });
 
     function draw() {
         time += 0.016;
@@ -2044,7 +2173,9 @@ refreshThemeRgb();
 
         sctx.clearRect(0, 0, w, vh);
 
-        /* ── Light band — horizontal glow at viewport centre ── */
+        const cursorDx = cursorX >= 0 ? (cursorX - w / 2) / (w / 2) * 4 : 0;
+        const cursorDy = cursorY >= 0 ? (cursorY - vh / 2) / (vh / 2) * 4 : 0;
+
         const bandH = 200;
         const bandA = 0.04 + constGlow * 0.06;
         const grad = sctx.createRadialGradient(w / 2, vh / 2, 0, w / 2, vh / 2, bandH);
@@ -2054,72 +2185,171 @@ refreshThemeRgb();
         sctx.fillStyle = grad;
         sctx.fillRect(0, vh / 2 - bandH, w, bandH * 2);
 
-        /* ── Connections ── */
         connections.forEach(c => {
             const a = c.a, b = c.b;
-            const ay = a.y - scrollY * a.parallax, by = b.y - scrollY * b.parallax;
+            const ax = a.x + cursorDx * a.parallax, bx = b.x + cursorDx * b.parallax;
+            const ay = a.y + (cursorDy - scrollY) * a.parallax, by = b.y + (cursorDy - scrollY) * b.parallax;
             if ((ay < -40 && by < -40) || (ay > vh + 40 && by > vh + 40)) return;
-            const dx = a.x - b.x;
+            const dx = ax - bx;
             const dy = ay - by;
             const screenDist = Math.sqrt(dx * dx + dy * dy);
             if (screenDist > 160) return;
             const fade = Math.max(0, 1 - screenDist / c.maxDist);
-            const litCount = (a.isLit ? 1 : 0) + (b.isLit ? 1 : 0);
-            /* lit connections stay visible regardless of scroll distance */
-            const scrollFade = litCount >= 2 ? 1.0 : Math.max(0, 1 - Math.abs((a.y + b.y) / 2 - viewMidY) / (vh * 1.2));
-            const litBoost = litCount * 0.35;
-            const alpha = fade * scrollFade * (0.1 + litBoost + constGlow * 0.15);
+            const avgGlow = (c.a.glow + c.b.glow) / 2;
+            const avgFlash = Math.max(c.a.flash, c.b.flash);
+            const scrollFade = Math.max(0, 1 - Math.abs((a.y + b.y) / 2 - viewMidY) / (vh * 1.2));
+            const litBoost = avgGlow * 0.5 + avgFlash * 0.4;
+            const alpha = fade * scrollFade * (0.08 + litBoost + constGlow * 0.15);
             if (alpha > 0.01) {
                 sctx.beginPath();
-                sctx.moveTo(a.x, ay);
-                sctx.lineTo(b.x, by);
+                sctx.moveTo(ax, ay);
+                sctx.lineTo(bx, by);
                 sctx.strokeStyle = `rgba(${themeRgb},${alpha})`;
-                sctx.lineWidth = 0.4 + litCount * 0.5 + constGlow * 0.3;
+                sctx.lineWidth = 0.3 + avgGlow * 0.7 + avgFlash * 0.6 + constGlow * 0.3;
                 sctx.stroke();
             }
         });
 
-        /* ── Stars ── */
         stars.forEach(st => {
-            const screenY = st.y - scrollY * st.parallax;
+            const cx = st.x + cursorDx * st.parallax;
+            const screenY = st.y + (cursorDy - scrollY) * st.parallax;
             if (screenY < -50 || screenY > vh + 50) return;
 
-            const distFromView = Math.abs(st.y - viewMidY);
-            const bandHalf = vh * 0.18;
-
-            /* Toggle lit state on band entry */
-            const wasInBand = st.inBand;
-            st.inBand = distFromView < bandHalf;
-            if (st.inBand && !wasInBand) {
-                st.isLit = !st.isLit;
-                st.pulse = 1.0;
+            if (!st.isLit) {
+                const threshold = vh * 0.14 + (st.twinklePhase / (Math.PI * 2)) * vh * 0.12;
+                const offsetY = viewMidY + st.scrollPhase;
+                if (Math.abs(st.y - offsetY) < threshold) {
+                    st.isLit = true;
+                    st.litTime = time;
+                    st.glowTarget = 1.0;
+                    st.flash = 1.0;
+                }
             }
 
-            const targetA = st.baseA * (st.isLit ? 1.0 : 0.55);
-            st.currentA += (targetA - st.currentA) * 0.08;
+            if (st.litTime >= 0) {
+                const elapsed = time - st.litTime;
+                const duration = st.glowTarget > 0.5 ? 2.0 : 1.2;
+                const progress = Math.min(elapsed / duration, 1);
+                st.glow = st.glowTarget * (0.6 + 0.4 * progress * progress);
+            }
+
+            if (st.flash > 0.001) {
+                st.flash *= 0.92;
+            } else {
+                st.flash = 0;
+            }
+
+            const dx = cursorX - cx;
+            const dy = cursorY - screenY;
+            const cursorDist = Math.sqrt(dx * dx + dy * dy);
+            const cursorFalloff = Math.max(0, 1 - cursorDist / 220);
+            const cursorBoost = cursorFalloff * cursorFalloff * 0.7;
+
+            const brightness = st.glow + st.flash + cursorBoost;
+            const targetA = st.baseA * (0.35 + 0.65 * Math.min(brightness, 1));
+            st.currentA += (targetA - st.currentA) * 0.2;
 
             const twinkle = Math.sin(time * st.twinkleSpeed + st.twinklePhase) * 0.12 + 0.88;
-            const alpha = st.currentA * twinkle;
-            const sizeScale = st.isLit ? 1.0 : 0.65;
-            const size = st.r * (sizeScale + constGlow * 0.15);
+            const breath = 1 + Math.sin(time * 0.2 + st.twinklePhase) * 0.1;
+            const alpha = st.currentA * twinkle * breath;
+            const size = st.r * (0.45 + 0.55 * st.glow) * (1 + st.flash * 0.3) * (1 + constGlow * 0.15);
+
+            if (st.glow > 0.01) {
+                const glowR = size * (2 + st.glow * 4 + st.flash * 3);
+                const grad = sctx.createRadialGradient(cx, screenY, size * 0.2, cx, screenY, glowR);
+                const haloA = Math.min(st.glow * 0.2 + st.flash * 0.25, 0.45);
+                grad.addColorStop(0, `rgba(${themeRgb},${haloA})`);
+                grad.addColorStop(0.4, `rgba(${themeRgb},${haloA * 0.5})`);
+                grad.addColorStop(1, `rgba(${themeRgb},0)`);
+                sctx.beginPath();
+                sctx.arc(cx, screenY, glowR, 0, Math.PI * 2);
+                sctx.fillStyle = grad;
+                sctx.fill();
+            }
 
             sctx.beginPath();
-            sctx.arc(st.x, screenY, size, 0, Math.PI * 2);
+            sctx.arc(cx, screenY, size, 0, Math.PI * 2);
             sctx.fillStyle = `rgba(${themeRgb},${Math.min(alpha, 0.95)})`;
             sctx.fill();
-
-            /* Pulse ring on toggle */
-            if (st.pulse > 0.01) {
-                sctx.beginPath();
-                sctx.arc(st.x, screenY, size * (1 + st.pulse * 4), 0, Math.PI * 2);
-                sctx.strokeStyle = `rgba(${themeRgb},${st.pulse * 0.4})`;
-                sctx.lineWidth = 2 * st.pulse;
-                sctx.stroke();
-                st.pulse *= 0.9;
-            }
         });
 
-        /* ── Shooting star ── */
+        if (cursorX >= 0 && cursorY >= 0) {
+            const cursorScrollY = window.scrollY;
+            let nearest = -1, nearDist = 80;
+            for (let i = 0; i < stars.length; i++) {
+                const st = stars[i];
+                const scx = st.x + cursorDx * st.parallax;
+                const sy = st.y + (cursorDy - cursorScrollY) * st.parallax;
+                if (sy < -60 || sy > vh + 60) continue;
+                const d = Math.hypot(scx - cursorX, sy - cursorY);
+                if (d < nearDist) { nearDist = d; nearest = i; }
+            }
+            if (nearest >= 0) {
+                const a = stars[nearest];
+                const acx = a.x + cursorDx * a.parallax;
+                const ay = a.y + (cursorDy - cursorScrollY) * a.parallax;
+                const searchR = 180;
+                let connections = [];
+                for (let i = 0; i < stars.length; i++) {
+                    if (i === nearest) continue;
+                    const b = stars[i];
+                    const bcx = b.x + cursorDx * b.parallax;
+                    const by = b.y + (cursorDy - cursorScrollY) * b.parallax;
+                    if (by < -60 || by > vh + 60) continue;
+                    if (Math.abs(b.parallax - a.parallax) > 0.35) continue;
+                    const d = Math.hypot(acx - bcx, ay - by);
+                    if (d < searchR) connections.push({ b, bcx, by, d });
+                }
+                connections.sort((x, y) => x.d - y.d);
+                connections.slice(0, 5).forEach(c => {
+                    const fade = 1 - c.d / searchR;
+                    const alpha = fade * fade * 0.5;
+                    sctx.beginPath();
+                    sctx.moveTo(acx, ay);
+                    sctx.lineTo(c.bcx, c.by);
+                    sctx.strokeStyle = `rgba(${themeRgb},${alpha})`;
+                    sctx.lineWidth = 0.6 + fade * 1.2;
+                    sctx.stroke();
+                });
+            }
+
+            const lanternR = 150;
+            const lg = sctx.createRadialGradient(cursorX, cursorY, 0, cursorX, cursorY, lanternR);
+            lg.addColorStop(0, `rgba(${themeRgb},0.06)`);
+            lg.addColorStop(0.5, `rgba(${themeRgb},0.025)`);
+            lg.addColorStop(1, `rgba(${themeRgb},0)`);
+            sctx.fillStyle = lg;
+            sctx.fillRect(cursorX - lanternR, cursorY - lanternR, lanternR * 2, lanternR * 2);
+        }
+
+        if (cursorX >= 0 && cursorY >= 0 && Date.now() - lastTrailSpawn > 40) {
+            lastTrailSpawn = Date.now();
+            for (let i = 0; i < 2; i++) {
+                trailParticles.push({
+                    x: cursorX + (Math.random() - 0.5) * 8,
+                    y: cursorY + (Math.random() - 0.5) * 8,
+                    vx: (Math.random() - 0.5) * 0.6,
+                    vy: -0.3 - Math.random() * 0.4,
+                    life: 1,
+                    decay: 0.012 + Math.random() * 0.012,
+                    size: 1.2 + Math.random() * 2,
+                });
+            }
+        }
+        for (let i = trailParticles.length - 1; i >= 0; i--) {
+            const p = trailParticles[i];
+            p.x += p.vx + Math.sin(p.life * 8 + p.y * 0.01) * 0.15;
+            p.y += p.vy;
+            p.vy *= 0.98;
+            p.life -= p.decay;
+            if (p.life <= 0) { trailParticles.splice(i, 1); continue; }
+            sctx.beginPath();
+            sctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            sctx.fillStyle = `rgba(${themeRgb},${p.life * 0.35})`;
+            sctx.fill();
+        }
+        if (trailParticles.length > 300) trailParticles.splice(0, trailParticles.length - 300);
+
         if (!activeStreak && Date.now() - lastStreak > 5000 + Math.random() * 3000) {
             lastStreak = Date.now();
             const src = stars[Math.floor(Math.random() * stars.length)];
@@ -2154,9 +2384,50 @@ refreshThemeRgb();
             }
         }
 
+        if (Date.now() - lastMicroFlare > 1200 + Math.random() * 2800) {
+            lastMicroFlare = Date.now();
+            for (let attempt = 0; attempt < 15; attempt++) {
+                const st = stars[Math.floor(Math.random() * stars.length)];
+                if (st.revealed && st.glow > 0.4) {
+                    const sy = st.y - scrollY * st.parallax;
+                    if (sy >= -50 && sy <= vh + 50) {
+                        st.flash = 0.18 + Math.random() * 0.15;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (time < 2) {
+            const veilA = Math.max(0, 1 - time / 2) * 0.65;
+            sctx.fillStyle = `rgba(4,20,13,${veilA})`;
+            sctx.fillRect(0, 0, w, vh);
+        }
+
+        if (heroRevealTime >= 0) {
+            const elapsed = time - heroRevealTime;
+            const duration = 5.0;
+            const progress = Math.min(elapsed / duration, 1);
+            if (progress < 1) {
+                const radius = vh * (0.06 + progress * 0.5);
+                const alpha = (1 - progress) * 0.08;
+                const gx = w / 2;
+                const gy = scrollY + vh / 2;
+                const g = sctx.createRadialGradient(gx, gy, 0, gx, gy, radius);
+                g.addColorStop(0, `rgba(${themeRgb},${alpha})`);
+                g.addColorStop(0.5, `rgba(${themeRgb},${alpha * 0.4})`);
+                g.addColorStop(1, `rgba(${themeRgb},0)`);
+                sctx.fillStyle = g;
+                sctx.fillRect(0, 0, w, vh);
+            }
+        }
+
         requestAnimationFrame(draw);
     }
     draw();
+
+    window.__heroReveal = startHeroReveal;
+    window.__startSpread = startInitSpread;
 })();
 
 /* ============================================================
@@ -2253,10 +2524,16 @@ function renderFeatured() {
                 <div class="project-tags">
                     ${p.tags.map(t => `<span>${t}</span>`).join('')}
                 </div>
-                <a href="${p.url}" target="_blank" class="btn-ghost" style="font-size:0.85rem">
-                    View Project
-                    <i class="fa-solid fa-arrow-right" style="font-size:0.7rem"></i>
-                </a>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <a href="${p.url}" target="_blank" class="btn-ghost" style="font-size:0.85rem">
+                        View Project
+                        <i class="fa-solid fa-arrow-right" style="font-size:0.7rem"></i>
+                    </a>
+                    ${p.archiveUrl ? `<a href="${p.archiveUrl}" target="_blank" class="btn-ghost" style="font-size:0.8rem;padding:6px 14px">
+                        <i class="fa-solid fa-timeline" style="font-size:0.7rem"></i>
+                        Versions
+                    </a>` : ''}
+                </div>
             </div>
         </div>
     `).join('');
@@ -2290,14 +2567,19 @@ function renderBrowser() {
             ? portfolioData.catalogue
             : portfolioData.catalogue.filter(p => p.category === category);
         gridEl.innerHTML = filtered.map((p, i) => `
-            <a href="${p.url}" target="_blank" class="browser-card" style="transition-delay:${i * 0.03}s">
-                <div class="browser-card-icon"><i class="fas fa-${p.icon}"></i></div>
-                <div class="browser-card-info">
-                    <h4>${p.name}</h4>
-                    <div class="tags">${p.tags.slice(0, 3).map(t => `<span>${t}</span>`).join('')}</div>
-                </div>
+            <div class="browser-card" style="transition-delay:${i * 0.03}s">
+                <a href="${p.url}" target="_blank" class="browser-card-main" style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;text-decoration:none;color:inherit">
+                    <div class="browser-card-icon"><i class="fas fa-${p.icon}"></i></div>
+                    <div class="browser-card-info">
+                        <h4>${p.name}</h4>
+                        <div class="tags">${p.tags.slice(0, 3).map(t => `<span>${t}</span>`).join('')}</div>
+                    </div>
+                </a>
+                ${p.archiveUrl ? `<a href="${p.archiveUrl}" target="_blank" class="browser-card-archive" title="Version history" aria-label="Version history">
+                    <i class="fa-solid fa-timeline"></i>
+                </a>` : ''}
                 <div class="browser-card-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-            </a>
+            </div>
         `).join('');
         countEl.textContent = `Showing ${filtered.length} of ${portfolioData.catalogue.length} projects`;
 
@@ -2669,6 +2951,17 @@ canvas.addEventListener('click', e => {
         activeStar.glow = 0;
         activeStar = null;
     }
+});
+
+/* ── Landing animation ── */
+window.addEventListener('load', () => {
+    requestAnimationFrame(() => {
+        document.querySelector('.hero-content')?.classList.add('animate');
+        if (window.__startSpread) window.__startSpread();
+    });
+    setTimeout(() => {
+        if (window.__heroReveal) window.__heroReveal();
+    }, 1800);
 });
 </script>
 </body>
